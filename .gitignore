@@ -1,0 +1,13 @@
+data
+static/analysis
+static/images
+static/uploads
+tf-lite
+venv
+Bestmango_disease_model.h5
+Bestmango_disease_model.tflite
+test1.tflite
+firebaseFirestore.json
+mango_disease_model.h5
+mango_disease_model.tflite
+Site Visualization

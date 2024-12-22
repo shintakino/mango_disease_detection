@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Environmental Monitoring - Mango Disease Detection</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2e7d32;
+            --secondary-color: #4caf50;
+            --background-color: #e8f5e9;
+            --text-color: #333;
+            --white: #ffffff;
+            --light-green: #c8e6c9;
+            --dark-green: #1b5e20;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .header {
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 1rem 0; /* Reduced padding */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-grow: 1;
+            text-align: center;
+            width: 100%;
+        }
+
+        .logo {
+            flex-shrink: 0;
+            margin-left: 3rem;
+        }
+
+        .logo img {
+            width: 120px;
+            height: auto;
+        }
+
+        .title {
+            text-align: center;
+            flex-grow: 1;
+        }
+
+        .title h1 {
+            font-size: 2rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .title p {
+            font-size: 1rem;
+            color: #a5d6a7;
+        }
+
+        /* Center the nav items */
+        nav {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+            width: 100%;
+        }
+
+        nav a {
+            color: var(--white);
+            text-decoration: none;
+            font-weight: bold;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            transition: background-color 0.3s ease;
+        }
+
+        nav a:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .container {
+            flex: 1;
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        h2 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-size: 2rem;
+            text-align: center;
+        }
+
+        .card-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2rem;
+        }
+
+        .card {
+            background-color: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 300px;
+            text-align: center;
+        }
+
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        .card h3 {
+            font-size: 1.2rem;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .card p {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        .footer {
+            background-color: var(--primary-color);
+            color: var(--white);
+            text-align: center;
+            padding: 1rem;
+            width: 100%;
+        }
+
+        .footer a {
+            color: #a5d6a7;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Sidebar (hidden by default on larger screens) */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: -250px;
+            width: 250px;
+            height: 100%;
+            background-color: var(--primary-color);
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.3);
+            transition: right 0.3s ease;
+            z-index: 1000;
+            padding-top: 2rem;
+        }
+
+        .sidebar a {
+            color: var(--white);
+            text-decoration: none;
+            padding: 1rem;
+            display: block;
+            border-bottom: 1px solid #fff;
+        }
+
+        .sidebar a:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .sidebar-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 1rem;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 1001;
+        }
+
+        @media (max-width: 768px) {
+            nav {
+                display: none;
+            }
+
+            .sidebar-toggle {
+                display: block;
+            }
+
+            .logo {
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+                margin-bottom: 1rem;
+            }
+
+            .header-content {
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .title {
+                text-align: center;
+            }
+
+            .toggle-buttons {
+                display: block;
+            }
+
+            .card {
+                max-width: 100%;
+            }
+        }
+        @media (min-width: 769px) {
+            .header-content {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .logo {
+                position: absolute;
+                left: 1rem;
+            }
+
+            .sidebar-toggle {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <img src="{{ url_for('static', filename='assets/university.png') }}" alt="University Logo" />
+            </div>
+            <div class="title">
+                <h1>Mango Disease Detection System</h1>
+                <p>AI-Powered Detection for Anthracnose Disease in Carabao Mangoes</p>
+            </div>
+        </div>
+        <nav>
+            <a href="/">Home</a>
+            <a href="#">Analyze Disease</a>
+            <a href="#">Sensors Data</a>
+            <a href="analysis">Analyze Data</a>
+        </nav>
+    </header>
+    <div class="sidebar">
+        <a href="/">Home</a>
+        <a href="#">Analyze Disease</a>
+        <a href="#">Sensors Data</a>
+        <a href="analysis">Analyze Data</a>
+    </div>
+    <div class="sidebar-toggle" onclick="toggleSidebar()">☰</div>
+
+    <div class="container">
+        <h2>Current Environmental Conditions</h2>
+        <div class="card-container">
+            <div class="card">
+                <div class="card-icon">🌡️</div>
+                <h3>Temperature</h3>
+                <p id="temperature">28°C</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">💧</div>
+                <h3>Humidity</h3>
+                <p id="humidity">65%</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">🌱</div>
+                <h3>Soil Moisture</h3>
+                <p id="soil-moisture">42%</p>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>&copy; 2024 Mango Disease Detection System. All rights reserved.</p>
+    </footer>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.style.right = sidebar.style.right === '0px' ? '-250px' : '0px';
+        }
+        // This script would be replaced with actual data fetching logic
+        function updateEnvironmentalData() {
+            document.getElementById('temperature').textContent = Math.floor(Math.random() * (35 - 20) + 20) + '°C';
+            document.getElementById('humidity').textContent = Math.floor(Math.random() * (80 - 40) + 40) + '%';
+            document.getElementById('soil-moisture').textContent = Math.floor(Math.random() * (60 - 20) + 20) + '%';
+        }
+
+        // Update data every 5 seconds (for demonstration purposes)
+        setInterval(updateEnvironmentalData, 5000);
+        updateEnvironmentalData(); // Initial update
+    </script>
+</body>
+</html>
+

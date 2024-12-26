@@ -1,6 +1,7 @@
 import os
 # Set the environment variable
 os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
+#Use in the terminal -- set PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 import tensorflow as tf
 from flask import Flask, render_template, request, jsonify, Response, redirect, url_for
 import firebase_admin

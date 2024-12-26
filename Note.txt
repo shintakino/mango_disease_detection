@@ -1,0 +1,4 @@
+Use: Python 3.7.8
+set PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python --- paste in the terrminal
+pip install -r requirements.txt
+download your json file in firebase

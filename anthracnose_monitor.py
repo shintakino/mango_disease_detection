@@ -22,7 +22,7 @@ db = firestore.client()
 app = Flask(__name__)
 
 # Load the TensorFlow Lite model
-interpreter = tf.lite.Interpreter(model_path="test1.tflite")
+interpreter = tf.lite.Interpreter(model_path="bestMangoModel.tflite")
 interpreter.allocate_tensors()
 
 # Path to the uploaded images folder
@@ -41,16 +41,21 @@ if not os.path.exists('static/images'):
 def analysis():
     return render_template('analysis.html')
 
-@app.route('/get-analysis-day', methods=['GET'])
-def get_analysis_day():
+@app.route('/get-analysis-custom', methods=['GET'])
+def get_analysis_custom():
     try:
-        # Get current date
-        now = datetime.now()
-        start_of_day = datetime(now.year, now.month, now.day)
+        # Get start and end dates from query parameters
+        start_date_str = request.args.get('start_date')
+        end_date_str = request.args.get('end_date')
 
-        # Fetch data from Firestore where timestamp is after start_of_day
+        # Convert string dates to datetime objects
+        start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
+        end_date = datetime.strptime(end_date_str, "%Y-%m-%d") + timedelta(days=1)  # Include the end date
+
+        # Fetch data from Firestore where timestamp is between start_date and end_date
         analysis_docs = db.collection('analyzed_data') \
-            .where('timestamp', '>=', start_of_day) \
+            .where('timestamp', '>=', start_date) \
+            .where('timestamp', '<', end_date) \
             .stream()
 
         analysis_data = []
@@ -65,12 +70,55 @@ def get_analysis_day():
             })
 
         return jsonify({
-            'message': 'Analysis data for today fetched successfully',
+            'message': 'Analysis data for custom date range fetched successfully',
             'data': analysis_data
         }), 200
 
     except Exception as e:
         return jsonify({'message': f'An error occurred: {str(e)}'}), 500
+    
+@app.route('/get-analysis-day', methods=['GET'])
+def get_analysis_day():
+    try:
+        # Get the 'date_date' query parameter (in YYYY-MM-DD format)
+        date_date_str = request.args.get('day_date')
+
+        # If 'date_date' is provided, parse it; otherwise, default to today
+        if date_date_str:
+            start_of_day = datetime.strptime(date_date_str, '%Y-%m-%d')
+        else:
+            now = datetime.now()
+            start_of_day = datetime(now.year, now.month, now.day)
+
+        # Calculate the end of the day for the selected date
+        end_of_day = start_of_day + timedelta(days=1)
+
+        # Fetch data from Firestore where timestamp is between start_of_day and end_of_day
+        analysis_docs = db.collection('analyzed_data') \
+            .where('timestamp', '>=', start_of_day) \
+            .where('timestamp', '<', end_of_day) \
+            .stream()
+
+        analysis_data = []
+        for doc in analysis_docs:
+            data = doc.to_dict()
+            image_url = url_for('static', filename='analysis/' + os.path.basename(data['image_url']))
+            analysis_data.append({
+                'confidence': data.get('confidence'),
+                'disease': data.get('disease'),
+                'image_url': image_url,
+                'timestamp': data.get('timestamp'),
+            })
+
+        return jsonify({
+            'message': f'Analysis data for {start_of_day.strftime("%Y-%m-%d")} fetched successfully',
+            'data': analysis_data
+        }), 200
+
+    except Exception as e:
+        return jsonify({'message': f'An error occurred: {str(e)}'}), 500
+
+
 
 @app.route('/get-analysis-week', methods=['GET'])
 def get_analysis_week():
@@ -165,41 +213,7 @@ def get_analysis_year():
     except Exception as e:
         return jsonify({'message': f'An error occurred: {str(e)}'}), 500
 
-@app.route('/get-analysis-custom', methods=['GET'])
-def get_analysis_custom():
-    try:
-        # Get start and end dates from query parameters
-        start_date_str = request.args.get('start_date')
-        end_date_str = request.args.get('end_date')
 
-        # Convert string dates to datetime objects
-        start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
-        end_date = datetime.strptime(end_date_str, "%Y-%m-%d") + timedelta(days=1)  # Include the end date
-
-        # Fetch data from Firestore where timestamp is between start_date and end_date
-        analysis_docs = db.collection('analyzed_data') \
-            .where('timestamp', '>=', start_date) \
-            .where('timestamp', '<', end_date) \
-            .stream()
-
-        analysis_data = []
-        for doc in analysis_docs:
-            data = doc.to_dict()
-            image_url = url_for('static', filename='analysis/' + os.path.basename(data['image_url']))
-            analysis_data.append({
-                'confidence': data.get('confidence'),
-                'disease': data.get('disease'),
-                'image_url': image_url,
-                'timestamp': data.get('timestamp'),
-            })
-
-        return jsonify({
-            'message': 'Analysis data for custom date range fetched successfully',
-            'data': analysis_data
-        }), 200
-
-    except Exception as e:
-        return jsonify({'message': f'An error occurred: {str(e)}'}), 500
 
 
 @app.route('/get-analysis-graph', methods=['GET'])
@@ -459,4 +473,4 @@ def retake_photo():
     return redirect(url_for('cam'))  # Redirect to the camera page
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='192.168.100.6', port=5000)

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analysis Dashboard - Mango Disease Detection</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
 
@@ -214,7 +215,6 @@
             from {opacity: 0.4;}
             to {opacity: 1;}
         }
-
         .footer {
             background-color: var(--primary-color);
             color: var(--white);
@@ -231,7 +231,6 @@
         .footer a:hover {
             text-decoration: underline;
         }
-
         /* Sidebar (hidden by default on larger screens) */
         .sidebar {
             position: fixed;
@@ -300,14 +299,6 @@
                 display: block;
             }
 
-            .section {
-                padding: 1rem;
-            }
-
-            h2 {
-                font-size: 1.3rem;
-            }
-
             .button {
                 padding: 6px 12px;
                 font-size: 0.8rem;
@@ -322,6 +313,7 @@
                 min-height: 250px;
             }
         }
+
         @media (min-width: 769px) {
             .header-content {
                 display: flex;
@@ -344,7 +336,7 @@
     <header class="header">
         <div class="header-content">
             <div class="logo">
-                <img src="{{ url_for('static', filename='images/university_logo.png') }}" alt="University Logo" />
+                <img src="{{ url_for('static', filename='assets/university.png') }}" alt="University Logo" />
             </div>
             <div class="title">
                 <h1>Mango Disease Detection System</h1>
@@ -375,6 +367,12 @@
                 <button id="month-button" class="button">Month</button>
                 <button id="year-button" class="button">Year</button>
             </div>
+            <div class="date-input" id="day-date-input" style="display: none;">
+                <label for="day-date">Select Date:
+                    <input type="date" id="day-date">
+                </label>
+                <button id="day-date-button" class="button">Submit</button>
+            </div>
             <div class="date-input">
                 <label for="start-date">Start:
                     <input type="date" id="start-date">
@@ -391,102 +389,247 @@
             <div class="graph-container">
                 <canvas id="analysisGraph"></canvas>
             </div>
+            <div class="button-group">
+                <button id="reset-zoom" class="button">Reset Zoom</button>
+            </div>
         </section>
 
         <section class="section">
             <h2>Recent Analyzed Images</h2>
             <div class="image-slideshow" id="image-slideshow"></div>
             <div class="button-group">
-                <button id="prev-button" class="button">Previous</button>
-                <button id="next-button" class="button">Next</button>
+                <button id="prev-button" class="button">Newest</button>
+                <button id="next-button" class="button">Oldest</button>
             </div>
         </section>
     </div>
-
     <footer class="footer">
         <p>&copy; 2024 Mango Disease Detection System. All rights reserved.</p>
     </footer>
 
     <script>
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.style.right = sidebar.style.right === '0px' ? '-250px' : '0px';
+        }
+
         let selectedPeriod = 'day';
         let chartInstance = null;
         let currentSlide = 0;
         let slides = [];
 
-        document.getElementById('day-button').onclick = () => { selectedPeriod = 'day'; fetchAnalysisData(); };
-        document.getElementById('week-button').onclick = () => { selectedPeriod = 'week'; fetchAnalysisData(); };
-        document.getElementById('month-button').onclick = () => { selectedPeriod = 'month'; fetchAnalysisData(); };
-        document.getElementById('year-button').onclick = () => { selectedPeriod = 'year'; fetchAnalysisData(); };
+        // Event listeners for buttons
+        document.getElementById('day-button').onclick = () => {
+            selectedPeriod = 'day';
+            document.getElementById('day-date-input').style.display = 'flex';
+        };
+
+        document.getElementById('day-date-button').onclick = () => {
+            const dayDate = document.getElementById('day-date').value;
+            if (dayDate) {
+                fetchAnalysisData(dayDate);
+            } else {
+                alert("Please select a valid date for the day.");
+            }
+        };
+
+        document.getElementById('week-button').onclick = () => { 
+            selectedPeriod = 'week'; 
+            document.getElementById('day-date-input').style.display = 'none';
+            fetchAnalysisData(); 
+        };
+
+        document.getElementById('month-button').onclick = () => { 
+            selectedPeriod = 'month'; 
+            document.getElementById('day-date-input').style.display = 'none';
+            fetchAnalysisData(); 
+        };
+
+        document.getElementById('year-button').onclick = () => { 
+            selectedPeriod = 'year'; 
+            document.getElementById('day-date-input').style.display = 'none';
+            fetchAnalysisData(); 
+        };
 
         document.getElementById('custom-range-button').onclick = () => {
             const startDate = document.getElementById('start-date').value;
             const endDate = document.getElementById('end-date').value;
-            if (startDate && endDate) {
-                selectedPeriod = 'custom';
-                fetchAnalysisData(startDate, endDate);
+        
+            if (!startDate || !endDate) {
+                alert("Both start and end dates are required for custom range.");
+                return;
             }
+
+            if (new Date(startDate) > new Date(endDate)) {
+                alert("Start date must be before end date.");
+                return;
+            }
+
+            selectedPeriod = 'custom';
+            fetchAnalysisData(null, startDate, endDate);
         };
 
-        async function fetchAnalysisData(startDate = '', endDate = '') {
-            let url = `/get-analysis-graph?period=${selectedPeriod}`;
-            if (selectedPeriod === 'custom' && startDate && endDate) {
-                url = `/get-analysis-graph?start=${startDate}&end=${endDate}`;
-            }
+        // Fetch data function with improved error handling
+        async function fetchAnalysisData(dayDate = null, startDate = null, endDate = null) {
+            try {
+                let url = `/get-analysis-graph?period=${selectedPeriod}`;
+                
+                if (selectedPeriod === 'custom') {
+                    if (!startDate || !endDate) {
+                        throw new Error('Both start and end dates are required for custom period.');
+                    }
+                    url = `/get-analysis-graph?start=${startDate}&end=${endDate}`;
+                } else if (selectedPeriod === 'day' && dayDate) {
+                    url = `/get-analysis-graph?day_date=${dayDate}`;
+                }
+        
+                console.log(`Fetching data from URL: ${url}`);
+        
+                const response = await fetch(url);
+        
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+        
+                const data = await response.json();
+                
+                if (!data.data || !Array.isArray(data.data) || data.data.length === 0) {
+                    throw new Error('No data available for the selected period.');
+                }
 
-            const response = await fetch(url);
-            const data = await response.json();
-            if (data.data && data.data.length > 0) {
-                const filteredData = filterDataByPeriod(data.data, selectedPeriod, startDate, endDate);
-                filteredData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                const filteredData = filterDataByPeriod(data.data, selectedPeriod, startDate, endDate, dayDate);
+                
+                if (filteredData.length === 0) {
+                    throw new Error('No data available for the selected time range.');
+                }
+
                 renderGraph(filteredData);
                 renderSlideshow(filteredData);
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert(error.message || 'An error occurred while fetching the data.');
             }
         }
 
-        function filterDataByPeriod(data, period, startDate, endDate) {
+        // Improved filter function with proper date handling
+        function filterDataByPeriod(data, period, startDate, endDate, dayDate) {
+            if (!Array.isArray(data) || data.length === 0) {
+                return [];
+            }
+
             const now = new Date();
             let filteredData = [];
-            
-            if (period === 'day') {
-                const todayStart = new Date(now.setHours(0, 0, 0, 0));
-                filteredData = data.filter(item => new Date(item.timestamp) >= todayStart);
-            } else if (period === 'week') {
-                const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
-                filteredData = data.filter(item => new Date(item.timestamp) >= weekStart);
-            } else if (period === 'month') {
-                const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-                filteredData = data.filter(item => new Date(item.timestamp) >= monthStart);
-            } else if (period === 'year') {
-                const yearStart = new Date(now.getFullYear(), 0, 1);
-                filteredData = data.filter(item => new Date(item.timestamp) >= yearStart);
-            } else if (period === 'custom') {
-                const customStartDate = new Date(startDate);
-                const customEndDate = new Date(endDate);
-                customEndDate.setHours(23, 59, 59, 999);
-                filteredData = data.filter(item => {
-                    const timestamp = new Date(item.timestamp);
-                    return timestamp >= customStartDate && timestamp <= customEndDate;
-                });
-            }            
 
-            return filteredData;
+            try {
+                switch (period) {
+                    case 'day':
+                        const dayStart = dayDate ? new Date(dayDate) : new Date(now.setHours(0, 0, 0, 0));
+                        const dayEnd = new Date(dayStart);
+                        dayEnd.setHours(23, 59, 59, 999);
+                        
+                        filteredData = data.filter(item => {
+                            const timestamp = new Date(item.timestamp);
+                            return timestamp >= dayStart && timestamp <= dayEnd;
+                        });
+                        break;
+
+                    case 'week':
+                        const weekStart = new Date(now);
+                        weekStart.setDate(now.getDate() - now.getDay());
+                        weekStart.setHours(0, 0, 0, 0);
+                        
+                        filteredData = data.filter(item => {
+                            const timestamp = new Date(item.timestamp);
+                            return timestamp >= weekStart;
+                        });
+                        break;
+
+                    case 'month':
+                        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                        filteredData = data.filter(item => {
+                            const timestamp = new Date(item.timestamp);
+                            return timestamp >= monthStart;
+                        });
+                        break;
+
+                    case 'year':
+                        const yearStart = new Date(now.getFullYear(), 0, 1);
+                        filteredData = data.filter(item => {
+                            const timestamp = new Date(item.timestamp);
+                            return timestamp >= yearStart;
+                        });
+                        break;
+
+                    case 'custom':
+                        if (!startDate || !endDate) {
+                            throw new Error('Both start and end dates are required for custom period.');
+                        }
+                        
+                        const customStartDate = new Date(startDate);
+                        customStartDate.setHours(0, 0, 0, 0);
+                        
+                        const customEndDate = new Date(endDate);
+                        customEndDate.setHours(23, 59, 59, 999);
+
+                        filteredData = data.filter(item => {
+                            const timestamp = new Date(item.timestamp);
+                            return timestamp >= customStartDate && timestamp <= customEndDate;
+                        });
+                        break;
+
+                    default:
+                        throw new Error('Invalid period selected');
+                }
+
+                return filteredData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+            } catch (error) {
+                console.error('Error in filterDataByPeriod:', error);
+                return [];
+            }
         }
+
 
         function renderGraph(analysisData) {
             const ctx = document.getElementById('analysisGraph').getContext('2d');
-            const labels = analysisData.map(item => new Date(item.timestamp).toLocaleDateString());
-
-            const healthyConfidence = analysisData.filter(item => item.disease === 'Healthy').map(item => item.confidence * 100);
-            const anthracnoseConfidence = analysisData.filter(item => item.disease === 'Anthracnose').map(item => item.confidence * 100);
-
+        
+            // Sort the data by timestamp in descending order (latest first)
+            const sortedData = analysisData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        
+            // Create arrays for labels and confidence data for both 'Healthy' and 'Anthracnose'
+            const labels = [];
+            const healthyConfidence = [];
+            const anthracnoseConfidence = [];
+        
+            // Loop through sorted data and ensure each entry corresponds to a label and confidence value
+            sortedData.forEach(item => {
+                const date = new Date(item.timestamp);
+                const dateTimeLabel = `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+                labels.push(dateTimeLabel);
+        
+                if (item.disease === 'Healthy') {
+                    healthyConfidence.push(item.confidence * 100);
+                    anthracnoseConfidence.push(null);  // No data for Anthracnose on this point
+                } else if (item.disease === 'Anthracnose') {
+                    healthyConfidence.push(null);  // No data for Healthy on this point
+                    anthracnoseConfidence.push(item.confidence * 100);
+                }
+            });
+        
+            // Ensure labels are unique
+            const uniqueLabels = [...new Set(labels)];
+        
+            // Check if chart instance exists; if so, destroy it before re-creating
             if (chartInstance) {
                 chartInstance.destroy();
             }
-
+        
+            // Create the chart
             chartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: labels,
+                    labels: uniqueLabels,
                     datasets: [
                         {
                             label: 'Healthy',
@@ -494,7 +637,8 @@
                             borderColor: '#4caf50',
                             backgroundColor: 'rgba(76, 175, 80, 0.1)',
                             fill: true,
-                            tension: 0.4
+                            tension: 0.4,
+                            spanGaps: true  // Connect points even with missing data
                         },
                         {
                             label: 'Anthracnose',
@@ -502,7 +646,8 @@
                             borderColor: '#f44336',
                             backgroundColor: 'rgba(244, 67, 54, 0.1)',
                             fill: true,
-                            tension: 0.4
+                            tension: 0.4,
+                            spanGaps: true  // Connect points even with missing data
                         }
                     ]
                 },
@@ -513,12 +658,12 @@
                         x: {
                             title: {
                                 display: true,
-                                text: 'Date'
+                                text: 'Date and Time'
                             },
+                            reverse: true, // Ensure latest data appears first
                             ticks: {
-                                maxTicksLimit: 5,
-                                maxRotation: 0,
-                                minRotation: 0
+                                maxTicksLimit: 10, // Adjust for better readability
+                                autoSkip: true,
                             }
                         },
                         y: {
@@ -527,7 +672,10 @@
                                 text: 'Confidence (%)'
                             },
                             min: 0,
-                            max: 100
+                            max: 100,
+                            ticks: {
+                                stepSize: 20 // Customize as needed
+                            }
                         }
                     },
                     plugins: {
@@ -542,6 +690,21 @@
                                     return `${context.dataset.label}: ${context.raw.toFixed(2)}%`;
                                 }
                             }
+                        },
+                        zoom: {
+                            zoom: {
+                                wheel: {
+                                    enabled: true,
+                                },
+                                pinch: {
+                                    enabled: true
+                                },
+                                mode: 'x',
+                            },
+                            pan: {
+                                enabled: true,
+                                mode: 'x',
+                            },
                         }
                     },
                     interaction: {
@@ -549,26 +712,35 @@
                         axis: 'x',
                         intersect: false
                     }
-                }
+                },
+                plugins: [ChartZoom]
             });
+        
+            console.log('Graph rendered with all data, ensuring no missing data points.');
         }
+        
+        
 
         function renderSlideshow(analysisData) {
             const slideshowContainer = document.getElementById('image-slideshow');
-            slideshowContainer.innerHTML = '';
+            slideshowContainer.innerHTML = ''; // Clear any existing slides
             slides = [];
-
-            analysisData.forEach((item, index) => {
+        
+            // Sort the data from latest to oldest based on timestamp
+            const sortedData = analysisData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+            // Create slides for each item in the sorted data
+            sortedData.forEach((item, index) => {
                 const slide = document.createElement('div');
-                slide.className = `slide ${index === 0 ? 'active' : ''}`;
-
+                slide.className = `slide ${index === 0 ? 'active' : ''}`; // First slide is active by default
+        
                 const img = document.createElement('img');
                 img.src = item.image_url;
                 img.alt = 'Analyzed Image';
-
+        
                 const info = document.createElement('div');
                 info.className = 'slide-info';
-
+        
                 const label = document.createElement('p');
                 label.innerText = `Disease: ${item.disease}`;
                 const confidence = document.createElement('p');
@@ -576,31 +748,31 @@
                 const timestamp = document.createElement('p');
                 timestamp.className = 'timestamp';
                 timestamp.innerText = new Date(item.timestamp).toLocaleString();
-
+        
                 info.appendChild(label);
                 info.appendChild(confidence);
                 info.appendChild(timestamp);
-
+        
                 slide.appendChild(img);
                 slide.appendChild(info);
                 slideshowContainer.appendChild(slide);
-                slides.push(slide);
+                slides.push(slide); // Add slide to the array for navigation
             });
-
+        
             setUpSlideshowNavigation();
         }
-
+        
         function setUpSlideshowNavigation() {
-            currentSlide = 0;
+            currentSlide = 0; // Start from the first slide
             updateSlideVisibility();
-
+        
             document.getElementById('next-button').onclick = function() {
                 if (currentSlide < slides.length - 1) {
                     currentSlide++;
                     updateSlideVisibility();
                 }
             };
-
+        
             document.getElementById('prev-button').onclick = function() {
                 if (currentSlide > 0) {
                     currentSlide--;
@@ -608,22 +780,23 @@
                 }
             };
         }
-
+        
         function updateSlideVisibility() {
             slides.forEach((slide, index) => {
-                slide.classList.toggle('active', index === currentSlide);
+                slide.classList.toggle('active', index === currentSlide); // Show the current slide
             });
-
+        
             document.getElementById('prev-button').disabled = currentSlide === 0;
             document.getElementById('next-button').disabled = currentSlide === slides.length - 1;
         }
-
-        function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            sidebar.style.right = sidebar.style.right === '0px' ? '-250px' : '0px';
-        }
+        
 
         fetchAnalysisData();
+
+        document.getElementById('reset-zoom').addEventListener('click', function() {
+            chartInstance.resetZoom();
+        });
     </script>
 </body>
 </html>
+

@@ -3,8 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Environmental Monitoring - Mango Disease Detection</title>
+    <title>Mango Disease Detection System</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getDatabase, ref, onValue, query, limitToLast, orderByKey } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
+    
+        const firebaseConfig = {
+            apiKey: "AIzaSyB6ZApUTe_lXpYTYfSlnaY4j67Z6z7x_Ds",
+            authDomain: "mango-monitoring-535a1.firebaseapp.com",
+            databaseURL: "https://mango-monitoring-535a1-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "mango-monitoring-535a1",
+            storageBucket: "mango-monitoring-535a1.firebasedstorage.app",
+            messagingSenderId: "60339205483",
+            appId: "1:60339205483:web:75e62b106c0e583c5ac82e"
+        };
+    
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const envDataRef = ref(db, 'EnvironmentData');
+    
+        function updateLatestData(data) {
+            const tempElement = document.getElementById('temperature');
+            const humidElement = document.getElementById('humidity');
+            const soilElement = document.getElementById('soil-moisture');
+    
+            tempElement.textContent = `${data.Temperature.toFixed(1)}°C`;
+            humidElement.textContent = `${data.Humidity.toFixed(1)}%`;
+            soilElement.textContent = `${data.SoilMoisture.toFixed(1)}%`;
+    
+            // Apply mango-specific color thresholds
+            colorCode('temperature', data.Temperature, 18, 35);
+            colorCode('humidity', data.Humidity, 40, 80);
+            colorCode('soil-moisture', data.SoilMoisture, 20, 60);
+        }
+    
+        function colorCode(elementId, value) {
+            const thresholds = {
+                'temperature': { low: 18, high: 35 },
+                'humidity': { low: 40, high: 80 },
+                'soil-moisture': { low: 20, high: 60 }
+            };
+    
+            const { low, high } = thresholds[elementId];
+            const element = document.getElementById(elementId);
+            if (value < low) {
+                element.style.color = '#2196F3'; // Too low
+            } else if (value > high) {
+                element.style.color = '#F44336'; // Too high
+            } else {
+                element.style.color = '#4CAF50'; // Optimal
+            }
+        }
+    
+        // Initialize real-time listeners
+        window.onload = function () {
+            // Listen for latest data
+            const latestDataQuery = query(envDataRef, orderByKey(), limitToLast(1));
+            onValue(latestDataQuery, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = Object.values(snapshot.val())[0];
+                    updateLatestData(data);
+                } else {
+                    console.error("No data available");
+                }
+            }, (error) => {
+                console.error("Error fetching data: ", error);
+            });
+        };
+    </script>
     <style>
         :root {
             --primary-color: #2e7d32;
@@ -12,7 +84,8 @@
             --background-color: #e8f5e9;
             --text-color: #333;
             --white: #ffffff;
-            --light-green: #c8e6c9;
+            --light-green: #c8 ```html
+e6c9;
             --dark-green: #1b5e20;
         }
 
@@ -35,7 +108,7 @@
         .header {
             background-color: var(--primary-color);
             color: var(--white);
-            padding: 1rem 0; /* Reduced padding */
+            padding: 1rem 0;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             display: flex;
             justify-content: space-between;
@@ -77,7 +150,6 @@
             color: #a5d6a7;
         }
 
-        /* Center the nav items */
         nav {
             display: flex;
             justify-content: center;
@@ -114,36 +186,40 @@
         }
 
         .card-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
         }
 
         .card {
             background-color: var(--white);
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 1.5rem;
-            width: 100%;
-            max-width: 300px;
+            padding: 1rem;
             text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
         }
 
         .card-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
             color: var(--primary-color);
         }
 
         .card h3 {
-            font-size: 1.2rem;
+            font-size: 1rem;
             color: var(--primary-color);
             margin-bottom: 0.5rem;
         }
 
         .card p {
-            font-size: 2rem;
+            font-size: 1.5rem;
             font-weight: bold;
             color: var(--text-color);
         }
@@ -154,6 +230,7 @@
             text-align: center;
             padding: 1rem;
             width: 100%;
+            margin-top: 2rem;
         }
 
         .footer a {
@@ -165,7 +242,16 @@
             text-decoration: underline;
         }
 
-        /* Sidebar (hidden by default on larger screens) */
+        #controls {
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        canvas {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
         .sidebar {
             position: fixed;
             top: 0;
@@ -174,7 +260,8 @@
             height: 100%;
             background-color: var(--primary-color);
             box-shadow: -2px 0 5px rgba(0, 0, 0, 0.3);
-            transition: right 0.3s ease;
+            transition: right ```html
+            0.3s ease;
             z-index: 1000;
             padding-top: 2rem;
         }
@@ -185,6 +272,7 @@
             padding: 1rem;
             display: block;
             border-bottom: 1px solid #fff;
+            transition: background-color 0.3s ease;
         }
 
         .sidebar a:hover {
@@ -201,6 +289,11 @@
             border-radius: 50%;
             cursor: pointer;
             z-index: 1001;
+            transition: background-color 0.3s ease;
+        }
+
+        .sidebar-toggle:hover {
+            background-color: var(--secondary-color);
         }
 
         @media (max-width: 768px) {
@@ -229,14 +322,11 @@
                 text-align: center;
             }
 
-            .toggle-buttons {
-                display: block;
-            }
-
             .card {
                 max-width: 100%;
             }
         }
+
         @media (min-width: 769px) {
             .header-content {
                 display: flex;
@@ -268,15 +358,15 @@
         </div>
         <nav>
             <a href="/">Home</a>
-            <a href="#">Analyze Disease</a>
-            <a href="#">Sensors Data</a>
+            <a href="analyze_data_image">Analyze Disease</a>
+            <a href="sensors_data">Sensors Data</a>
             <a href="analysis">Analyze Data</a>
         </nav>
     </header>
     <div class="sidebar">
         <a href="/">Home</a>
-        <a href="#">Analyze Disease</a>
-        <a href="#">Sensors Data</a>
+        <a href="analyze_data_image">Analyze Disease</a>
+        <a href="sensors_data">Sensors Data</a>
         <a href="analysis">Analyze Data</a>
     </div>
     <div class="sidebar-toggle" onclick="toggleSidebar()">☰</div>
@@ -287,19 +377,26 @@
             <div class="card">
                 <div class="card-icon">🌡️</div>
                 <h3>Temperature</h3>
-                <p id="temperature">28°C</p>
+                <p id="temperature">Loading...</p>
             </div>
             <div class="card">
                 <div class="card-icon">💧</div>
                 <h3>Humidity</h3>
-                <p id="humidity">65%</p>
+                <p id="humidity">Loading...</p>
             </div>
             <div class="card">
                 <div class="card-icon">🌱</div>
                 <h3>Soil Moisture</h3>
-                <p id="soil-moisture">42%</p>
+                <p id="soil-moisture">Loading...</p>
             </div>
         </div>
+
+        <h2>Sensor Data Chart</h2>
+        <div id="controls">
+            <button id="loadMore">Load More Data</button>
+            <button id="revertData">Revert to Smaller Data</button>
+        </div>
+        <canvas id="sensorChart" width="800" height="400"></canvas>
     </div>
 
     <footer class="footer">
@@ -307,21 +404,143 @@
     </footer>
 
     <script>
-        function toggleSidebar() {
+        const apiUrl = 'https://mango-monitoring-535a1-default-rtdb.asia-southeast1.firebasedatabase.app/EnvironmentData.json';
+        let allData = [];
+        let currentIndex = 0;
+        let dataLimit = 10; // Number of data points to load at a time
+        const initialDataLimit = 10; // Initial data limit
+        const reducedDataLimit = 5; // Reduced data limit when reverting
+
+        function fetchData() {
+            return fetch(apiUrl)
+                .then(response => response.json())
+                .catch(error => console.error('Error fetching data:', error));
+        }
+
+        function processData(data) {
+            const labels = [];
+            const humidityData = [];
+            const temperatureData = [];
+            const soilMoistureData = [];
+
+            for (const timestamp in data) {
+                const date = new Date(timestamp);
+                if (isNaN(date)) {
+                    console.error('Invalid date for timestamp:', timestamp);
+                    continue;
+                }
+                const isoTimestamp = date.toISOString();
+                labels.push(isoTimestamp);
+                humidityData.push(data[timestamp].Humidity || null);
+                temperatureData.push(data[timestamp].Temperature || null);
+                soilMoistureData.push(data[timestamp].SoilMoisture || null);
+            }
+
+            return { labels, humidityData, temperatureData, soilMoistureData };
+        }
+
+        async function renderChart() {
+            const rawData = await fetchData();
+            allData = processData(rawData);
+            updateChart(allData, initialDataLimit);
+        }
+
+        const ctx = document.getElementById('sensorChart').getContext('2d');
+        const sensorChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Humidity (%)',
+                        data: [],
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        fill: true,
+                    },
+                    {
+                        label: 'Temperature (°C)',
+                        data: [],
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        fill: true,
+                    },
+                    {
+                        label: 'Soil Moisture (%)',
+                        data: [],
+                        borderColor: 'rgba(153, 102, 255, 1)',
+                        backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                        fill: true,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'minute',
+                            tooltipFormat: 'MMM d, yyyy, h:mm:ss a',
+                            displayFormats: {
+                                minute: 'MMM d, yyyy, h:mm a'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Timestamp'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Values'
+                        }
+                    }
+                }
+            }
+        });
+
+        function updateChart(data, limit) {
+            const { labels, humidityData, temperatureData, soilMoistureData } = data;
+
+            // Clear existing data
+            sensorChart.data.labels = [];
+            sensorChart.data.datasets[0].data = [];
+            sensorChart.data.datasets[1].data = [];
+            sensorChart.data.datasets[2].data = [];
+
+            // Append new data to the chart based on the specified limit
+            sensorChart.data.labels.push(...labels.slice(0, limit));
+            sensorChart.data.datasets[0].data.push(...humidityData.slice(0, limit));
+            sensorChart.data.datasets[1].data.push(...temperatureData.slice(0, limit));
+            sensorChart.data.datasets[2].data.push(...soilMoistureData.slice(0, limit));
+
+            // Update the chart
+            sensorChart.update();
+        }
+
+        document.getElementById('loadMore').addEventListener('click', () => {
+            if (currentIndex < allData.labels.length) {
+                currentIndex += dataLimit;
+                updateChart(allData, Math.min(currentIndex, allData.labels.length));
+            } else {
+                console.log('No more data to load');
+            }
+        });
+
+        document.getElementById('revertData').addEventListener('click', () => {
+            currentIndex = Math.max(0, currentIndex - dataLimit);
+            updateChart(allData, currentIndex);
+        });
+
+        // Initial render
+        renderChart();
+
+    function toggleSidebar() {
             const sidebar = document.querySelector('.sidebar');
             sidebar.style.right = sidebar.style.right === '0px' ? '-250px' : '0px';
         }
-        // This script would be replaced with actual data fetching logic
-        function updateEnvironmentalData() {
-            document.getElementById('temperature').textContent = Math.floor(Math.random() * (35 - 20) + 20) + '°C';
-            document.getElementById('humidity').textContent = Math.floor(Math.random() * (80 - 40) + 40) + '%';
-            document.getElementById('soil-moisture').textContent = Math.floor(Math.random() * (60 - 20) + 20) + '%';
-        }
-
-        // Update data every 5 seconds (for demonstration purposes)
-        setInterval(updateEnvironmentalData, 5000);
-        updateEnvironmentalData(); // Initial update
     </script>
 </body>
 </html>
-

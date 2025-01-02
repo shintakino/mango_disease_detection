@@ -4,6 +4,7 @@ os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 #Use in the terminal -- set PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 import tensorflow as tf
 from flask import Flask, render_template, request, jsonify, Response, redirect, url_for
+import requests
 import firebase_admin
 from firebase_admin import credentials, firestore 
 from tensorflow.keras.preprocessing import image 
@@ -37,10 +38,84 @@ if not os.path.exists(UPLOAD_FOLDER):
 # Ensure the 'images' folder exists in the 'static' directory
 if not os.path.exists('static/images'):
     os.makedirs('static/images')
+    
+# Firebase Realtime Database URL
+FIREBASE_URL = "https://mango-monitoring-535a1-default-rtdb.asia-southeast1.firebasedatabase.app/EnvironmentData.json"
+
+def fetch_latest_sensor_data():
+    """Fetch the latest temperature, humidity, and soil moisture data from Firebase."""
+    response = requests.get(FIREBASE_URL, params={"orderBy": '"$key"', "limitToLast": 1})
+    if response.status_code == 200:
+        data = response.json()
+        if data:
+            latest_key = list(data.keys())[0]
+            latest_entry = data[latest_key]
+            return latest_entry
+    return None
+
+def fetch_historical_sensor_data(limit=20):
+    """Fetch historical data for the graph."""
+    response = requests.get(FIREBASE_URL, params={"orderBy": '"$key"', "limitToLast": limit})
+    if response.status_code == 200:
+        data = response.json()
+        if data:
+            return data
+    return None
+
+@app.route("/sensor_cards")
+def sensor_cards():
+    # Fetch the latest data for the cards
+    latest_data = fetch_latest_sensor_data()
+    if latest_data:
+        temperature = latest_data.get("Temperature", "N/A")
+        humidity = latest_data.get("Humidity", "N/A")
+        soil_moisture = latest_data.get("SoilMoisture", "N/A")
+    else:
+        temperature = humidity = soil_moisture = "N/A"
+
+    # Fetch historical data for the graph
+    historical_data = fetch_historical_sensor_data()
+    if historical_data:
+        labels = []
+        temperature_data = []
+        humidity_data = []
+        soil_moisture_data = []
+        for key, entry in historical_data.items():
+            labels.append(entry.get("Timestamp", "N/A"))
+            temperature_data.append(entry.get("Temperature", 0))
+            humidity_data.append(entry.get("Humidity", 0))
+            soil_moisture_data.append(entry.get("SoilMoisture", 0))
+    else:
+        labels = temperature_data = humidity_data = soil_moisture_data = []
+
+    return render_template(
+        "sensor_cards.html",
+        temperature=temperature,
+        humidity=humidity,
+        soil_moisture=soil_moisture,
+        labels=labels,
+        temperature_data=temperature_data,
+        humidity_data=humidity_data,
+        soil_moisture_data=soil_moisture_data,
+    )
+    
+@app.route("/latest-timestamp")
+def latest_timestamp():
+    """Return the latest timestamp from Firebase."""
+    latest_data = fetch_latest_data()
+    if latest_data:
+        return jsonify({"timestamp": latest_data.get("Timestamp", "")})
+    return jsonify({"timestamp": ""})
 
 @app.route('/analysis')
 def analysis():
     return render_template('analysis.html')
+@app.route('/sensors_data')
+def sensors_data():
+    return render_template('sensor_graph.html')
+@app.route('/analyze_data_image')
+def analysis_data_image():
+    return render_template('analyze_data_image.html')
 
 @app.route('/get-analysis-custom', methods=['GET'])
 def get_analysis_custom():
@@ -317,7 +392,7 @@ def predict_image(img_path):
 # Route for the main page
 @app.route('/')
 def home():
-    return render_template('index.html')
+    return render_template('sensor_cards.html')
 
 # Route for the upload image page
 @app.route('/upload')
@@ -474,4 +549,4 @@ def retake_photo():
     return redirect(url_for('cam'))  # Redirect to the camera page
 
 if __name__ == '__main__':
-    app.run(debug=True, host='192.168.100.6', port=5000)
+    app.run(debug=True, host='192.168.100.24', port=5000)

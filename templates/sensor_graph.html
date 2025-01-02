@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mango Disease Detection System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
+    <style>
+        :root {
+            --primary-color: #2e7d32;
+            --secondary-color: #4caf50;
+            --background-color: #e8f5e9;
+            --text-color: #333;
+            --white: #ffffff;
+            --light-green: #c8e6c9;
+            --dark-green: #1b5e20;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .header {
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 1rem 0; /* Reduced padding */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-grow: 1;
+            text-align: center;
+            width: 100%;
+        }
+
+        .logo {
+            flex-shrink: 0;
+            margin-left: 3rem;
+        }
+
+        .logo img {
+            width: 120px;
+            height: auto;
+        }
+
+        .title {
+            text-align: center;
+            flex-grow: 1;
+        }
+
+        .title h1 {
+            font-size: 2rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .title p {
+            font-size: 1rem;
+            color: #a5d6a7;
+        }
+
+        /* Center the nav items */
+        nav {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+            width: 100%;
+        }
+
+        nav a {
+            color: var(--white);
+            text-decoration: none;
+            font-weight: bold;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            transition: background-color 0.3s ease;
+        }
+
+        nav a:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .container {
+            flex: 1;
+            max-width: 800px; /* Set a max width for better layout */
+            margin: 1rem auto;
+            padding: 2rem;
+            background-color: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        h2 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+
+        #controls {
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto !important;
+            margin: 0 auto;
+        }
+
+        .year-input-container,
+        .range-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+            margin: 1rem 0;
+        }
+
+        .year-input-container input,
+        .range-controls input,
+        .year-input-container button,
+        .range-controls button {
+            padding: 0.5rem;
+            border: 1px solid var(--primary-color);
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .year-input-container button,
+        .range-controls button {
+            background-color: var(--primary-color);
+            color: var(--white);
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .year-input-container button:hover,
+        .range-controls button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .chart-container {
+            margin: 1rem 0;
+            padding: 1rem;
+            background-color: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .pagination-controls {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .swipe-indicator {
+            display: none;
+            text-align: center;
+            color: var(--primary-color);
+            font-size: 0.8rem;
+            margin: 0.5rem 0;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                max-width: 90%;
+            }
+
+            h2 {
+                font-size: 2rem;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .container {
+                max-width: 120 ```html
+0px;
+            }
+        }
+
+        @media (max-width: 767px) {
+            .swipe-indicator {
+                display: block;
+            }
+
+            .chart-container {
+                position: relative;
+                overflow: hidden;
+                touch-action: pan-y pinch-zoom;
+            }
+
+            .swipe-overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: linear-gradient(90deg, 
+                    rgba(46, 125, 50, 0.2) 0%, 
+                    rgba(255, 255, 255, 0) 15%, 
+                    rgba(255, 255, 255, 0) 85%, 
+                    rgba(46, 125, 50, 0.2) 100%);
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.3s ease;
+            }
+
+            .swipe-active .swipe-overlay {
+                opacity: 1;
+            }
+        }
+        /* Style for the buttons */
+        .toggle-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        .button {
+            display: inline-block;
+            background-color: var(--secondary-color);
+            color: var(--white);
+            padding: 0.75rem 1.5rem;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            text-align: center;
+            width: 48%; /* Set width to 48% to make buttons align on one line on larger screens */
+        }
+
+        .button:hover {
+            background-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .footer {
+            background-color: var(--primary-color);
+            color: var(--white);
+            text-align: center;
+            padding: 1rem;
+            width: 100%;
+        }
+
+        .footer a {
+            color: #a5d6a7;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Sidebar (hidden by default on larger screens) */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: -250px;
+            width: 250px;
+            height: 100%;
+            background-color: var(--primary-color);
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.3);
+            transition: right 0.3s ease;
+            z-index: 1000;
+            padding-top: 2rem;
+        }
+
+        .sidebar a {
+            color: var(--white);
+            text-decoration: none;
+            padding: 1rem;
+            display: block;
+            border-bottom: 1px solid #fff;
+        }
+
+        .sidebar a:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .sidebar-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background-color: var(--primary-color);
+            color: var(--white);
+            padding: 1rem;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 1001;
+        }
+
+        @media (max-width: 768px) {
+            nav {
+                display: none;
+            }
+
+            .sidebar-toggle {
+                display: block;
+            }
+
+            .logo {
+                display: block;
+                margin-left: auto;
+                margin-right: auto;
+                margin-bottom: 1rem;
+            }
+
+            .header-content {
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .title {
+                text-align: center;
+            }
+
+            .toggle-buttons {
+                display: block;
+            }
+
+            .button {
+                width: 100%; /* Buttons will stack vertically on smaller screens */
+                margin-bottom: 1rem; /* Add spacing between buttons */
+            }
+        }
+
+        @media (min-width: 769px) {
+            .header-content {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .logo {
+                position: absolute;
+                left: 1rem;
+            }
+
+            .sidebar-toggle {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <img src="{{ url_for('static', filename='assets/university.png') }}" alt="University Logo" />
+            </div>
+            <div class="title">
+                <h1>Mango Disease Detection System</h1>
+                <p>AI-Powered Detection for Anthracnose Disease in Carabao Mangoes</p>
+            </div>
+        </div>
+        <nav>
+            <a href="/">Home</a>
+            <a href="analyze_data_image">Analyze Disease</a>
+            <a href="sensors_data">Sensors Data</a>
+            <a href="analysis">Analyze Data</a>
+        </nav>
+    </header>
+    <div class="sidebar">
+        <a href="/">Home</a>
+        <a href="analyze_data_image">Analyze Disease</a>
+        <a href="sensors_data">Sensors Data</a>
+        <a href="analysis">Analyze Data</a>
+    </div>
+    <div class="sidebar-toggle" onclick="toggleSidebar()">☰</div>
+    <div class="container">
+        <h2>Current Environmental Conditions</h2>
+        <h2>Sensor Data Chart</h2>
+        <div id="controls">
+            <button id="loadMore">Load More Data</button>
+            <button id="revertData">Revert to Smaller Data</button>
+        </div>
+        <canvas id="sensorChart" width="800" height="400"></canvas>
+
+        <h2>Filter Data by Date</h2>
+        <input type="date" id="dateInput" />
+        <button id="filterData">Filter Data</button>
+        <canvas id="filteredChart" width="800" height="400"></canvas>
+
+        <h2>Average Weekly Data</h2>
+        <input type="month" id="monthInput" />
+        <button id="calculateAverage">Calculate Average</button>
+        <canvas id="weeklyChart" width="800" height="400"></canvas>
+        
+        <h2>Monthly Average Data</h2>
+        <div class="year-input-container">
+            <input type="number" id="yearInput" placeholder="Enter year" min="2000" max="2100" />
+            <button id="calculateMonthlyAverage">Calculate Monthly Average</button>
+        </div>
+        <canvas id="monthlyChart" width="800" height="400"></canvas>
+        <div class="chart-container">
+            <h2>Yearly Average Data</h2>
+            <canvas id="yearlyChart" width="800" height="400"></canvas>
+        </div>
+
+        <div class="chart-container">
+            <h2>Custom Range Data</h2>
+            <div class="range-controls">
+                <input type="datetime-local" id="startDate" />
+                <input type="datetime-local" id="endDate" />
+                <button id="fetchRangeData">Fetch Data</button>
+            </div>
+            <div class="pagination-controls">
+                <button id="loadMoreRange">Load More Data</button>
+                <button id="revertRange">Revert Data</button>
+            </div>
+            <canvas id="rangeChart" width="800" height="400"></canvas>
+        </div>
+    </div>
+    <footer class="footer">
+        <p>&copy; 2024 Mango Disease Detection System. All rights reserved.</p>
+    </footer>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.style.right = sidebar.style.right === '0px' ? '-250px' : '0px';
+        }
+        const apiUrl = 'https://mango-monitoring-535a1-default-rtdb.asia-southeast1.firebasedatabase.app/EnvironmentData.json';
+        let allData = [];
+        let currentIndex = 0;
+        let dataLimit = 10; // Number of data points to load at a time
+        const initialDataLimit = 10; // Initial data limit
+        const reducedDataLimit = 5; // Reduced data limit when reverting
+
+        function fetchData() {
+            return fetch(apiUrl)
+                .then(response => response.json())
+                .catch(error => console.error('Error fetching data:', error));
+        }
+
+        function processData(data) {
+            const labels = [];
+            const humidityData = [];
+            const temperatureData = [];
+            const soilMoistureData = [];
+
+ for (const timestamp in data) {
+                const date = new Date(timestamp);
+                if (isNaN(date)) {
+                    console.error('Invalid date for timestamp:', timestamp);
+                    continue;
+                }
+                const isoTimestamp = date.toISOString();
+                labels.push(isoTimestamp);
+                humidityData.push(data[timestamp].Humidity || null);
+                temperatureData.push(data[timestamp].Temperature || null);
+                soilMoistureData.push(data[timestamp].SoilMoisture || null);
+            }
+
+            return { labels, humidityData, temperatureData, soilMoistureData };
+        }
+
+        async function renderChart() {
+            const rawData = await fetchData();
+            allData = processData(rawData);
+            updateChart(allData, initialDataLimit);
+        }
+
+        const ctx = document.getElementById('sensorChart').getContext('2d');
+        const sensorChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Humidity (%)',
+                        data: [],
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        fill: true,
+                    },
+                    {
+                        label: 'Temperature (°C)',
+                        data: [],
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        fill: true,
+                    },
+                    {
+                        label: 'Soil Moisture (%)',
+                        data: [],
+                        borderColor: 'rgba(153, 102, 255, 1)',
+                        backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                        fill: true,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'minute',
+                            tooltipFormat: 'MMM d, yyyy, h:mm:ss a',
+                            displayFormats: {
+                                minute: 'MMM d, yyyy, h:mm a'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Timestamp'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Values'
+                        }
+                    }
+                }
+            }
+        });
+
+        function updateChart(data, limit) {
+            const { labels, humidityData, temperatureData, soilMoistureData } = data;
+
+            // Clear existing data
+            sensorChart.data.labels = [];
+            sensorChart.data.datasets[0].data = [];
+            sensorChart.data.datasets[1].data = [];
+            sensorChart.data.datasets[2].data = [];
+
+            // Append new data to the chart based on the specified limit
+            sensorChart.data.labels.push(...labels.slice(0, limit));
+            sensorChart.data.datasets[0].data.push(...humidityData.slice(0, limit));
+            sensorChart.data.datasets[1].data.push(...temperatureData.slice(0, limit));
+            sensorChart.data.datasets[2].data.push(...soilMoistureData.slice(0, limit));
+
+            // Update the chart
+            sensorChart.update();
+        }
+
+        document.getElementById('loadMore').addEventListener('click', () => {
+            if (currentIndex < allData.labels.length) {
+                currentIndex += dataLimit;
+                updateChart(allData, Math.min(currentIndex, allData.labels.length));
+            } else {
+                console.log('No more data to load');
+            }
+        });
+
+        document.getElementById('revertData').addEventListener('click', () => {
+            currentIndex = Math.max(0, currentIndex - dataLimit);
+            updateChart(allData, currentIndex);
+        });
+
+        document.getElementById('filterData').addEventListener('click', () => {
+            const selectedDate = new Date(document.getElementById('dateInput').value);
+            const filteredData = filterDataByDate(allData, selectedDate);
+            updateFilteredChart(filteredData);
+        });
+
+        function filterDataByDate(data, date) {
+            const labels = [];
+            const humidityData = [];
+            const temperatureData = [];
+            const soilMoistureData = [];
+
+            for (let i = 0; i < data.labels.length; i++) {
+                const dataDate = new Date(data.labels[i]);
+                if (dataDate.toDateString() === date.toDateString()) {
+                    labels.push(data.labels[i]);
+                    humidityData.push(data.humidityData[i]);
+                    temperatureData.push(data.temperatureData[i]);
+                    soilMoistureData.push(data.soilMoistureData[i]);
+                }
+            }
+
+            return { labels, humidityData, temperatureData , soilMoistureData };
+        }
+
+        const filteredCtx = document.getElementById('filteredChart').getContext('2d');
+        const filteredChart = new Chart(filteredCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Humidity (%)',
+                        data: [],
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        fill: true,
+                    },
+                    {
+                        label: 'Temperature (°C)',
+                        data: [],
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        fill: true,
+                    },
+                    {
+                        label: 'Soil Moisture (%)',
+                        data: [],
+                        borderColor: 'rgba(153, 102, 255, 1)',
+                        backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                        fill: true,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'minute',
+                            tooltipFormat: 'MMM d, yyyy, h:mm:ss a',
+                            displayFormats: {
+                                minute: 'MMM d, yyyy, h:mm a'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Timestamp'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Values'
+                        }
+                    }
+                }
+            }
+        });
+
+        function updateFilteredChart(data) {
+            const { labels, humidityData, temperatureData, soilMoistureData } = data;
+
+            // Clear existing data
+            filteredChart.data.labels = [];
+            filteredChart.data.datasets[0].data = [];
+            filteredChart.data.datasets[1].data = [];
+            filteredChart.data.datasets[2].data = [];
+
+            // Append new data to the filtered chart
+            filteredChart.data.labels.push(...labels);
+            filteredChart.data.datasets[0].data.push(...humidityData);
+            filteredChart.data.datasets[1].data.push(...temperatureData);
+            filteredChart.data.datasets[2].data.push(...soilMoistureData);
+
+            // Update the filtered chart
+            filteredChart.update();
+        }
+
+        document.getElementById('calculateAverage').addEventListener('click', () => {
+            const selectedMonth = document.getElementById('monthInput').value;
+            if (selectedMonth) {
+                const [year, month] = selectedMonth.split('-').map(Number);
+                const weeklyData = calculateWeeklyAverage(allData, year, month);
+                updateWeeklyChart(weeklyData);
+            } else {
+                console.log('Please select a month and year.');
+            }
+        });
+
+        function calculateWeeklyAverage(data, year, month) {
+            const weeklyHumidity = Array(5).fill(0);
+            const weeklyTemperature = Array(5).fill(0);
+            const weeklySoilMoisture = Array(5).fill(0);
+            const weeklyCount = Array(5).fill(0);
+
+            for (let i = 0; i < data.labels.length; i++) {
+                const date = new Date(data.labels[i]);
+                if (date.getFullYear() === year && date.getMonth() === month - 1) {
+                    const weekIndex = Math.floor(date.getDate() / 7);
+                    weeklyHumidity[weekIndex] += data.humidityData[i];
+                    weeklyTemperature[weekIndex] += data.temperatureData[i];
+                    weeklySoilMoisture[weekIndex] += data.soilMoistureData[i];
+                    weeklyCount[weekIndex]++;
+                }
+            }
+
+            return {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5'],
+                humidityData: weeklyHumidity.map((sum, index) => sum / (weeklyCount[index] || 1)),
+                temperatureData: weeklyTemperature.map((sum, index) => sum / (weeklyCount[index] || 1)),
+                soilMoistureData: weeklySoilMoisture.map((sum, index) => sum / (weeklyCount[index] || 1)),
+            };
+        }
+
+        const weeklyCtx = document.getElementById('weeklyChart').getContext('2d');
+        const weeklyChart = new Chart(weeklyCtx, {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Average Humidity (%)',
+                        data: [],
+                        backgroundColor: 'rgba(75, 192, 192, 0. 2)',
+                    },
+                    {
+                        label: 'Average Temperature (°C)',
+                        data: [],
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    },
+                    {
+                        label: 'Average Soil Moisture (%)',
+                        data: [],
+                        backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Weeks'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Average Values'
+                        }
+                    }
+                }
+            }
+        });
+
+        function updateWeeklyChart(data) {
+            const { labels, humidityData, temperatureData, soilMoistureData } = data;
+
+            // Clear existing data
+            weeklyChart.data.labels = [];
+            weeklyChart.data.datasets[0].data = [];
+            weeklyChart.data.datasets[1].data = [];
+            weeklyChart.data.datasets[2].data = [];
+
+            // Append new data to the weekly chart
+            weeklyChart.data.labels.push(...labels);
+            weeklyChart.data.datasets[0].data.push(...humidityData);
+            weeklyChart.data.datasets[1].data.push(...temperatureData);
+            weeklyChart.data.datasets[2].data.push(...soilMoistureData);
+
+            // Update the weekly chart
+            weeklyChart.update();
+        }
+
+        // Add new monthly average chart initialization
+        const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+        const monthlyChart = new Chart(monthlyCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                datasets: [
+                    {
+                        label: 'Average Humidity (%)',
+                        data: [],
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Average Temperature (°C)',
+                        data: [],
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Average Soil Moisture (%)',
+                        data: [],
+                        backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                        borderColor: 'rgba(153, 102, 255, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Months'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Average Values'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Add function to calculate monthly averages
+        function calculateMonthlyAverage(data, year) {
+            const monthlyHumidity = Array(12).fill(0);
+            const monthlyTemperature = Array(12).fill(0);
+            const monthlySoilMoisture = Array(12).fill(0);
+            const monthlyCount = Array(12).fill(0);
+
+            for (let i = 0; i < data.labels.length; i++) {
+                const date = new Date(data.labels[i]);
+                if (date.getFullYear() === year) {
+                    const monthIndex = date.getMonth();
+                    monthlyHumidity[monthIndex] += data.humidityData[i];
+                    monthlyTemperature[monthIndex] += data.temperatureData[i];
+                    monthlySoilMoisture[monthIndex] += data.soilMoistureData[i];
+                    monthlyCount[monthIndex]++;
+                }
+            }
+
+            return {
+                humidityData: monthlyHumidity.map((sum, index) => sum / (monthlyCount[index] || 1)),
+                temperatureData: monthlyTemperature.map((sum, index) => sum / (monthlyCount[index] || 1)),
+                soilMoistureData: monthlySoilMoisture.map((sum, index) => sum / (monthlyCount[index] || 1))
+            };
+        }
+
+        // Add function to update monthly chart
+        function updateMonthlyChart(data) {
+            monthlyChart.data.datasets[0].data = data.humidityData;
+            monthlyChart.data.datasets[1].data = data.temperatureData;
+            monthlyChart.data.datasets[2].data = data.soilMoistureData;
+            monthlyChart.update();
+        }
+
+        // Add event listener for monthly average calculation
+        document.getElementById('calculateMonthlyAverage').addEventListener('click', () => {
+            const selectedYear = parseInt(document.getElementById('yearInput').value);
+            if (selectedYear) {
+                const monthlyData = calculateMonthlyAverage(allData, selectedYear);
+                updateMonthlyChart(monthlyData);
+            } else {
+                console.log('Please enter a valid year.');
+            }
+        });
+
+        // Add yearly average chart initialization
+        const yearlyCtx = document.getElementById('yearlyChart').getContext('2d');
+        const yearlyChart = new Chart(yearlyCtx, {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Average Humidity (%)',
+                        data: [],
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Average Temperature (°C)',
+                        data: [],
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Average Soil Moisture (%)',
+                        data: [],
+                        backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                        borderColor: 'rgba(153, 102, 255, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Years'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Average Values'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Add custom range chart initialization
+        const rangeCtx = document.getElementById('rangeChart').getContext('2d');
+        const rangeChart = new Chart(rangeCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Humidity (%)',
+                        data: [],
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        fill: true,
+                    },
+                    {
+                        label: 'Temperature (°C)',
+                        data: [],
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        fill: true,
+                    },
+                    {
+                        label: 'Soil Moisture (%)',
+                        data: [],
+                        borderColor: 'rgba(153, 102, 255, 1)',
+                        backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                        fill: true,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'minute',
+                            tooltipFormat: 'MMM d, yyyy, h:mm:ss a',
+                            displayFormats: {
+                                minute: 'MMM d, yyyy, h:mm a'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Timestamp'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Values'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Function to calculate yearly averages
+        function calculateYearlyAverage(data) {
+            const yearlyData = {};
+
+            for (let i = 0; i < data.labels.length; i++) {
+                const date = new Date(data.labels[i]);
+                const year = date.getFullYear();
+
+                if (!yearlyData[year]) {
+                    yearlyData[year] = {
+                        humidity: [],
+                        temperature: [],
+                        soilMoisture: []
+                    };
+                }
+
+                yearlyData[year].humidity.push(data.humidityData[i]);
+                yearlyData[year].temperature.push(data.temperatureData[i]);
+                yearlyData[year].soilMoisture.push(data.soilMoistureData[i]);
+            }
+
+            const years = Object.keys(yearlyData).sort();
+            const averages = {
+                labels: years,
+                humidityData: [],
+                temperatureData: [],
+                soilMoistureData: []
+            };
+
+            years.forEach(year => {
+                const yearData = yearlyData[year];
+                averages.humidityData.push(
+                    yearData.humidity.reduce((a, b) => a + b, 0) / yearData.humidity.length
+                );
+                averages.temperatureData.push(
+                    yearData.temperature.reduce((a, b) => a + b, 0) / yearData.temperature.length
+                );
+                averages.soilMoistureData.push(
+                    yearData.soilMoisture.reduce((a, b) => a + b, 0) / yearData.soilMoisture.length
+                );
+            });
+
+            return averages;
+        }
+
+        // Function to update yearly chart
+        function updateYearlyChart(data) {
+            yearlyChart.data.labels = data.labels;
+            yearlyChart.data.datasets[0].data = data.humidityData;
+            yearlyChart.data.datasets[1].data = data.temperatureData;
+            yearlyChart.data.datasets[2].data = data.soilMoistureData;
+            yearlyChart.update();
+        }
+
+        // Variables for custom range data
+        let rangeData = [];
+        let currentRangeIndex = 0;
+        const rangeDataLimit = 10;
+
+        // Function to filter data by custom range
+        function filterDataByRange(data, startDate, endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            
+            const labels = [];
+            const humidityData = [];
+            const temperatureData = [];
+            const soilMoistureData = [];
+
+            for (let i = 0; i < data.labels.length; i++) {
+                const date = new Date(data.labels[i]);
+                if (date >= start && date <= end) {
+                    labels.push(data.labels[i]);
+                    humidityData.push(data.humidityData[i]);
+                    temperatureData.push(data.temperatureData[i]);
+                    soilMoistureData.push(data.soilMoistureData[i]);
+                }
+            }
+
+            return { labels, humidityData, temperatureData, soilMoistureData };
+        }
+
+        // Function to update range chart
+        function updateRangeChart(data, limit) {
+            rangeChart.data.labels = data.labels.slice(0, limit);
+            rangeChart.data.datasets[0].data = data.humidityData.slice(0, limit);
+            rangeChart.data.datasets[1].data = data.temperatureData.slice(0, limit);
+            rangeChart.data.datasets[2].data = data.soilMoistureData.slice(0, limit);
+            rangeChart.update();
+        }
+
+        // Event listener for fetching range data
+        document.getElementById('fetchRangeData').addEventListener('click', () => {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            if (startDate && endDate) {
+                rangeData = filterDataByRange(allData, startDate, endDate);
+                currentRangeIndex = rangeDataLimit;
+                updateRangeChart(rangeData, currentRangeIndex);
+            } else {
+                console.log('Please select both start and end dates');
+            }
+        });
+
+        // Event listener for loading more range data
+        document.getElementById('loadMoreRange').addEventListener('click', () => {
+            if (currentRangeIndex < rangeData.labels.length) {
+                currentRangeIndex += rangeDataLimit;
+                updateRangeChart(rangeData, currentRangeIndex);
+            }
+        });
+
+        // Event listener for reverting range data
+        document.getElementById('revertRange').addEventListener('click', () => {
+            if (currentRangeIndex > rangeDataLimit) {
+                currentRangeIndex -= rangeDataLimit;
+                updateRangeChart(rangeData, currentRangeIndex);
+            }
+        });
+
+        // Modify the initial render function to include yearly averages
+        async function renderChart() {
+            const rawData = await fetchData();
+            allData = processData(rawData);
+            
+            // Update all charts
+            updateChart(allData, initialDataLimit);
+            
+            // Calculate and update yearly averages
+            const yearlyAverages = calculateYearlyAverage(allData);
+            updateYearlyChart(yearlyAverages);
+        }
+
+        class SwipeHandler {
+            constructor(element, onSwipeLeft, onSwipeRight) {
+                this.element = element;
+                this.onSwipeLeft = onSwipeLeft;
+                this.onSwipeRight = onSwipeRight;
+                this.touchStartX = 0;
+                this.touchEndX = 0;
+                this.minSwipeDistance = 50; // Minimum distance for a swipe
+                this.touchStartTime = 0;
+                this.maxSwipeTime = 300; // Maximum time for a swipe in milliseconds
+
+                this.indicator = document.createElement('div');
+                this.indicator.className = 'swipe-indicator';
+                this.indicator.textContent = 'Swipe left to load more, right to revert';
+                element.parentNode.insertBefore(this.indicator, element.nextSibling);
+
+                this.overlay = document.createElement('div');
+                this.overlay.className = 'swipe-overlay';
+                element.appendChild(this.overlay);
+
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                this.element.addEventListener('touchstart', (e) => this.handleTouchStart(e), false);
+                this.element.addEventListener('touchmove', (e) => this.handleTouchMove(e), false);
+                this.element.addEventListener('touchend', (e) => this.handleTouchEnd(e), false);
+
+                // Show indicator when touching the element
+                this.element.addEventListener('touchstart', () => {
+                    this.indicator.style.opacity = '1';
+                    this.element.classList.add('swipe-active');
+                });
+
+                // Hide indicator after touch ends
+                this.element.addEventListener('touchend', () => {
+                    setTimeout(() => {
+                        this.indicator.style.opacity = '0';
+                        this.element.classList.remove('swipe-active');
+                    }, 1500);
+                });
+            }
+
+            handleTouchStart(event) {
+                this.touchStartX = event.touches[0].clientX;
+                this.touchStartTime = new Date().getTime();
+            }
+
+            handleTouchMove(event) {
+                this.touchEndX = event.touches[0].clientX;
+                // Calculate swipe direction and update overlay effect
+                const swipeDistance = this.touchEndX - this.touchStartX;
+                const overlayOpacity = Math.min(Math.abs(swipeDistance) / this.minSwipeDistance, 1);
+                this.overlay.style.opacity = overlayOpacity;
+            }
+
+            handleTouchEnd() {
+                const swipeTime = new Date().getTime() - this.touchStartTime;
+                const swipeDistance = this.touchEndX - this.touchStartX;
+
+                if (swipeTime <= this.maxSwipeTime && Math.abs(swipeDistance) >= this.minSwipeDistance) {
+                    if (swipeDistance < 0) {
+                        // Swipe left
+                        this.onSwipeLeft();
+                    } else {
+                        // Swipe right
+                        this.onSwipeRight();
+                    }
+                }
+
+                // Reset overlay
+                this.overlay.style.opacity = '0';
+            }
+        }
+
+        // Function to initialize swipe handlers for charts
+        function initializeSwipeHandlers() {
+            // For sensor data chart
+            const sensorChartElement = document.getElementById('sensorChart').parentElement;
+            new SwipeHandler(
+                sensorChartElement,
+                () => document.getElementById('loadMore').click(),
+                () => document.getElementById('revertData').click()
+            );
+
+            // For custom range chart
+            const rangeChartElement = document.getElementById('rangeChart').parentElement;
+            new SwipeHandler(
+                rangeChartElement,
+                () => document.getElementById('loadMoreRange').click(),
+                () => document.getElementById('revertRange').click()
+            );
+        }
+
+        // Modify the renderChart function to initialize swipe handlers after charts are rendered
+        async function renderChart() {
+            const rawData = await fetchData();
+            allData = processData(rawData);
+            
+            // Update all charts
+            updateChart(allData, initialDataLimit);
+            
+            // Calculate and update yearly averages
+            const yearlyAverages = calculateYearlyAverage(allData);
+            updateYearlyChart(yearlyAverages);
+
+            // Initialize swipe handlers after charts are rendered
+            initializeSwipeHandlers();
+        }
+
+        // Initialize charts and swipe handlers
+        renderChart();
+    </script>
+</body>
+</html>

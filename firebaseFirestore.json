@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "mango-monitoring-535a1",
+  "private_key_id": "185e47731717d9999a2449da11b8edaf08f4b3d4",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDe5lj7oz737HHy\nDVBCa2hmEmQroKpUPPCEJqPMyOcMiVKfVyfyMY6g3yRACQARPYxzJwXQ0H4VT6A/\not+68NaW1Cl3QoQxzSE/kzfIBYu9WdCOlDum4ykkM/mAeXfdkQmK3McwlFeoiKR3\nZDjA4Osb9iYbu+VycsZCMqo1RoX5L2F7T8Gb1zWik4P9p6M1FBJPz33f6+yBhowA\nwDRqgx5qONyQxPYS7SOPemBSzGF3+rS5RcTG+NRk24QuETPBWhfGyN2vvlYg6QkY\nQ4oEV2ryonLUO2mE/xBMQIRQfuWkyqQljOKCZvBtGXIlGzGOy3k0OHwaeERdbbLr\niyXE0PYhAgMBAAECggEAGvbSnN5Kp8M6pYVmyCImJvLim0R8VmRo1BO4jPVgvet+\nyzfH5UyJbHyR7g0orO09KFD4KyKNnhZb1Fbnqb2ot+ZCfeLWCxA9jWtJvDCvjuBm\nkljsPmwMdgyzig8nqO36sYmzrvTDBehBvQ+qreqHhoJoacJ5JzcrNKbcYEV/v3z5\n7WG9p6q3Ww8MsTIPf3uAXUelHJbudkJSsgkE/tAVPazA8SBG5km8Eze265f+zY+C\ngI7KutH3nbF8vXu+qyvrbtt1TT8S4xvVcrJ6KxPJw2gejh7w3FNXDHArpRv4tTak\neLhB9+q9xC9yzDedoH53HhthNr+z1Ny6P5hY3HDzYQKBgQD+U9vrEx8+IhPJ60bu\nz9k1l2Vb9aDAQVPPUWPal/XmhcaLYckar7m67HS0r9lQqJFz4xrPzv5WOi0D+V/i\nETMePW4AfL86Rq16l2+8Jg/2KeT8tNYGJ+TVq08ulzL+8PwREgNaxlGg/GuaeOfs\n896ptFbG/+TBlM9uRi1rMsl0owKBgQDgXZUQWndqyWXnAy1GjrkwIlPW3T8w/ciI\n4Rj1mQod37t3vg50ntp3+fSNTkEAnVnAcmmfq1zWAhbJFjHUsZ5drUxDeR6ewLMk\noy/eeuPYQ+Z4w0FBauqWmXn8bmUHeKvnkbSVa5eUtLVd4hy78p+VfLN9PKVAgU1w\n8DJQwstSawKBgQDaJOnML2Gr9KTOm/0Cl8syeYJaJ0xTu3T8rU4d0Bv+N55+LUjG\nmBWR7IGJ/g9DbOMd6J01w9FJ+qpj70E78g7LkFtLFbUcckUYks4nLuqf9X1Q+Hdf\nXlaco0zOpKf8Ho3GwpGYCeU4VWqiW7Rq/R5up52LITCAjniBmLYabbx4SwKBgQDI\nTiP/hpSoTIdiV667GD5yn6Lz53A7/8ZhlXyf/vJOO2j1fUMQkKWAiTHwWZWkw9XV\n/w8XUni+Qv0up1bziWNWRJoafu58UpNcuSfKWzJA6FXBKKiAi8BFlV2XpMMjiXMH\neUicQYMBatekqnJ2xSP95Gel/leWIBoQIxD4kv/MYwKBgQCuSwcxsK+Ol4YDQuXw\nNaoX8udG+mPIoAMXHcFaWsKBErjGW5WApMBighjdTJ8JPDdgGQs0wtFkcYd38r5Z\nWSVB5+n/Pbrt6lcJUZh0oEvexbpwKnU6T1ti+FMIcO8BpwjcMH/LNlSb2+deaKjR\nuVRp1Ggks06alyXZwXIDEU2w6A==\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-w9xe5@mango-monitoring-535a1.iam.gserviceaccount.com",
+  "client_id": "114454000032608166266",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-w9xe5%40mango-monitoring-535a1.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

@@ -32,11 +32,25 @@
             const tempElement = document.getElementById('temperature');
             const humidElement = document.getElementById('humidity');
             const soilElement = document.getElementById('soil-moisture');
-    
-            tempElement.textContent = `${data.Temperature.toFixed(1)}°C`;
-            humidElement.textContent = `${data.Humidity.toFixed(1)}%`;
-            soilElement.textContent = `${data.SoilMoisture.toFixed(1)}%`;
-    
+        
+            if (data.Temperature !== undefined) {
+                tempElement.textContent = `${data.Temperature.toFixed(1)}°C`;
+            } else {
+                tempElement.textContent = 'Data not available';
+            }
+        
+            if (data.Humidity !== undefined) {
+                humidElement.textContent = `${data.Humidity.toFixed(1)}%`;
+            } else {
+                humidElement.textContent = 'Data not available';
+            }
+        
+            if (data.SoilMoisture !== undefined) {
+                soilElement.textContent = `${data.SoilMoisture.toFixed(1)}%`;
+            } else {
+                soilElement.textContent = 'Data not available';
+            }
+        
             // Apply mango-specific color thresholds
             colorCode('temperature', data.Temperature, 18, 35);
             colorCode('humidity', data.Humidity, 40, 80);
@@ -422,20 +436,26 @@ e6c9;
             const humidityData = [];
             const temperatureData = [];
             const soilMoistureData = [];
-
+            
+            const validStartDate = new Date('2020-01-01T00:00:00Z'); // Set a reasonable start date
+        
             for (const timestamp in data) {
                 const date = new Date(timestamp);
-                if (isNaN(date)) {
+                if (isNaN(date.getTime()) || date < validStartDate) {
                     console.error('Invalid date for timestamp:', timestamp);
                     continue;
                 }
-                const isoTimestamp = date.toISOString();
+                const isoTimestamp = date.getTime(); // Get the timestamp in milliseconds
                 labels.push(isoTimestamp);
-                humidityData.push(data[timestamp].Humidity || null);
-                temperatureData.push(data[timestamp].Temperature || null);
-                soilMoistureData.push(data[timestamp].SoilMoisture || null);
+                
+                // Push data only if it exists
+                humidityData.push(data[timestamp].Humidity !== undefined ? data[timestamp].Humidity : null);
+                temperatureData.push(data[timestamp].Temperature !== undefined ? data[timestamp].Temperature : null);
+                soilMoistureData.push(data[timestamp].SoilMoisture !== undefined ? data[timestamp].SoilMoisture : null);
             }
-
+        
+            // Log the labels to check their values
+            console.log('Labels:', labels);
             return { labels, humidityData, temperatureData, soilMoistureData };
         }
 

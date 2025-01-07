@@ -472,20 +472,26 @@
             const humidityData = [];
             const temperatureData = [];
             const soilMoistureData = [];
-
- for (const timestamp in data) {
+        
+            const validStartDate = new Date('2020-01-01T00:00:00Z'); // Set a reasonable start date
+        
+            for (const timestamp in data) {
                 const date = new Date(timestamp);
-                if (isNaN(date)) {
+                if (isNaN(date.getTime()) || date < validStartDate) {
                     console.error('Invalid date for timestamp:', timestamp);
                     continue;
                 }
-                const isoTimestamp = date.toISOString();
+                const isoTimestamp = date.getTime(); // Get the timestamp in milliseconds
                 labels.push(isoTimestamp);
-                humidityData.push(data[timestamp].Humidity || null);
-                temperatureData.push(data[timestamp].Temperature || null);
-                soilMoistureData.push(data[timestamp].SoilMoisture || null);
+                
+                // Push data only if it exists
+                humidityData.push(data[timestamp].Humidity !== undefined ? data[timestamp].Humidity : null);
+                temperatureData.push(data[timestamp].Temperature !== undefined ? data[timestamp].Temperature : null);
+                soilMoistureData.push(data[timestamp].SoilMoisture !== undefined ? data[timestamp].SoilMoisture : null);
             }
-
+        
+            // Log the labels to check their values
+            console.log('Labels:', labels);
             return { labels, humidityData, temperatureData, soilMoistureData };
         }
 
@@ -580,8 +586,12 @@
         });
 
         document.getElementById('revertData').addEventListener('click', () => {
-            currentIndex = Math.max(0, currentIndex - dataLimit);
-            updateChart(allData, currentIndex);
+            if (currentIndex > initialDataLimit) {
+                currentIndex = initialDataLimit;
+                updateChart(allData, currentIndex);
+            } else {
+                console.log('No more data to revert');
+            }
         });
 
         document.getElementById('filterData').addEventListener('click', () => {

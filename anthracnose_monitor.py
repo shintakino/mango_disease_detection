@@ -424,7 +424,8 @@ def predict():
         'confidence': f'{confidence*100:.2f}%',
         'image_url': img_path
     })
-
+# Global camera object
+camera = None
 # Route to show the camera feed and capture photo
 @app.route('/cam')
 def cam():
@@ -432,16 +433,20 @@ def cam():
 
 # Function to initialize the camera
 def initialize_camera():
-    return cv2.VideoCapture(1)
+    global camera
+    if camera is None:
+        camera = cv2.VideoCapture(1)
 
 # Function to release the camera
-def release_camera(cam):
-    if cam.isOpened():
-        cam.release()
+def release_camera():
+    global camera
+    if camera and camera.isOpened():
+        camera.release()
+        camera = None
 
 # Function to generate the camera feed
 def generate_camera_feed():
-    camera = initialize_camera()
+    initialize_camera()
     try:
         while True:
             ret, frame = camera.read()
@@ -456,7 +461,7 @@ def generate_camera_feed():
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
     finally:
-        release_camera(camera)  # Ensure the camera is released when done
+        release_camera()  # Ensure the camera is released when done
 
 # Route to stream the camera feed
 @app.route('/video_feed')
@@ -467,7 +472,7 @@ def video_feed():
 # Route to take a photo (without saving)
 @app.route('/take_photo')
 def take_photo():
-    camera = initialize_camera()
+    initialize_camera()
     ret, frame = camera.read()
     photo_filename = None
     if ret:
@@ -480,7 +485,7 @@ def take_photo():
         
         # Save the temporary photo for preview
         cv2.imwrite(photo_path, frame)
-    release_camera(camera)  # Release the camera after capturing
+    release_camera()  # Release the camera after capturing
     
     if photo_filename:
         return render_template('take_photo.html', photo_path=f'images/{photo_filename}', photo_filename=photo_filename)
@@ -533,7 +538,6 @@ def save_photo():
     # If the photo doesn't exist, redirect back to the home page
     return redirect(url_for('home'))
 
-
 # Route to reset and retake the photo
 @app.route('/retake_photo')
 def retake_photo():
@@ -549,4 +553,4 @@ def retake_photo():
     return redirect(url_for('cam'))  # Redirect to the camera page
 
 if __name__ == '__main__':
-    app.run(debug=True, host='192.168.0.15', port=5000)
+    app.run(debug=True, host='192.168.1.23', port=5000)

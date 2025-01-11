@@ -32,6 +32,7 @@
             const tempElement = document.getElementById('temperature');
             const humidElement = document.getElementById('humidity');
             const soilElement = document.getElementById('soil-moisture');
+            const statusElement = document.getElementById('status'); // New element for status
         
             if (data.Temperature !== undefined) {
                 tempElement.textContent = `${data.Temperature.toFixed(1)}°C`;
@@ -49,6 +50,13 @@
                 soilElement.textContent = `${data.SoilMoisture.toFixed(1)}%`;
             } else {
                 soilElement.textContent = 'Data not available';
+            }
+        
+            // Update the status
+            if (data.Status !== undefined) {
+                statusElement.textContent = data.Status; // Update status text
+            } else {
+                statusElement.textContent = 'Data not available';
             }
         
             // Apply mango-specific color thresholds
@@ -402,6 +410,11 @@ e6c9;
                 <div class="card-icon">🌱</div>
                 <h3>Soil Moisture</h3>
                 <p id="soil-moisture">Loading...</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">🛡️</div>
+                <h3>Status</h3>
+                <p id="status">Loading...</p>
             </div>
         </div>
 

@@ -14,13 +14,14 @@
         import { getDatabase, ref, onValue, query, limitToLast, orderByKey } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
     
         const firebaseConfig = {
-            apiKey: "AIzaSyB6ZApUTe_lXpYTYfSlnaY4j67Z6z7x_Ds",
-            authDomain: "mango-monitoring-535a1.firebaseapp.com",
-            databaseURL: "https://mango-monitoring-535a1-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "mango-monitoring-535a1",
-            storageBucket: "mango-monitoring-535a1.firebasedstorage.app",
-            messagingSenderId: "60339205483",
-            appId: "1:60339205483:web:75e62b106c0e583c5ac82e"
+            apiKey: "AIzaSyCuEQb3pkVdmZJpUOEYqKlmRee1Orm9qNo",
+            authDomain: "mango-monitoring-54834.firebaseapp.com",
+            databaseURL: "https://mango-monitoring-54834-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "mango-monitoring-54834",
+            storageBucket: "mango-monitoring-54834.firebasestorage.app",
+            messagingSenderId: "582822181849",
+            appId: "1:582822181849:web:9a2aeeaffaf5fe7a35b7c8",
+            measurementId: "G-EP88KPJ929"
         };
     
         // Initialize Firebase
@@ -431,7 +432,7 @@ e6c9;
     </footer>
 
     <script>
-        const apiUrl = 'https://mango-monitoring-535a1-default-rtdb.asia-southeast1.firebasedatabase.app/EnvironmentData.json';
+        const apiUrl = 'https://mango-monitoring-54834-default-rtdb.asia-southeast1.firebasedatabase.app/EnvironmentData.json';
         let allData = [];
         let currentIndex = 0;
         let dataLimit = 10; // Number of data points to load at a time
@@ -453,11 +454,15 @@ e6c9;
             const validStartDate = new Date('2020-01-01T00:00:00Z'); // Set a reasonable start date
         
             for (const timestamp in data) {
-                const date = new Date(timestamp);
+                // Replace underscore with 'T' to make it a valid ISO format
+                const validTimestamp = timestamp.replace('_', 'T');
+                const date = new Date(validTimestamp);
+                
                 if (isNaN(date.getTime()) || date < validStartDate) {
                     console.error('Invalid date for timestamp:', timestamp);
                     continue;
                 }
+                
                 const isoTimestamp = date.getTime(); // Get the timestamp in milliseconds
                 labels.push(isoTimestamp);
                 

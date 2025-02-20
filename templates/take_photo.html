@@ -337,6 +337,47 @@
                 display: none;
             }
         }
+        .warning-note {
+            background-color: #fff8e1;
+            border-left: 4px solid #ffc107;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 6px;
+            text-align: left;
+            width: 100%;
+            max-width: 640px;
+        }
+
+        .warning-note h3 {
+            color: #d32f2f;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .warning-note ul {
+            margin-left: 1.5rem;
+            list-style-type: disc;
+            color: var(--dark-green);
+        }
+
+        .warning-note li {
+            margin-bottom: 0.75rem;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 768px) {
+            .warning-note {
+                padding: 1rem;
+                margin: 1rem 0;
+            }
+            
+            .warning-note h3 {
+                font-size: 1rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -369,6 +410,16 @@
         <h2>Your Photo</h2>
         <div class="photo-container">
             <img src="{{ url_for('static', filename=photo_path) }}" alt="Captured Photo">
+        </div>
+
+        <!-- Added warning note -->
+        <div class="warning-note">
+            <h3>?? Photo Quality Check:</h3>
+            <ul>
+                <li>Ensure white background is clearly visible</li>
+                <li>Check for even lighting without shadows</li>
+                <li>Verify image is in 3:4 ratio (1280x960px minimum)</li>
+            </ul>
         </div>
 
         <h2>Do you want to save this photo and analyze it?</h2>

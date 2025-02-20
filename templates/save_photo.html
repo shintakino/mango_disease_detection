@@ -36,7 +36,7 @@
         .header {
             background-color: var(--primary-color);
             color: var(--white);
-            padding: 1rem 0; /* Reduced padding */
+            padding: 1rem 0;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             display: flex;
             justify-content: space-between;
@@ -78,7 +78,6 @@
             color: #a5d6a7;
         }
 
-        /* Center the nav items */
         nav {
             display: flex;
             justify-content: center;
@@ -99,7 +98,7 @@
         nav a:hover {
             background-color: var(--secondary-color);
         }
-        /* Sidebar (hidden by default on larger screens) */
+
         .sidebar {
             position: fixed;
             top: 0;
@@ -149,7 +148,7 @@
 
         h2 {
             color: var(--primary-color);
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
             font-size: 2rem;
             text-align: center;
         }
@@ -159,16 +158,34 @@
             text-align: center;
         }
 
-        .result-container h3 {
-            color: var(--secondary-color);
-            font-size: 1.5em;
-            font-weight: bold;
-            margin-bottom: 0.5rem;
+        .result-line {
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
         }
 
-        .result-container p {
-            font-size: 1.2em;
+        .prediction-label {
+            color: #d32f2f;
+            font-weight: 600;
+        }
+
+        .confidence-label {
+            color: #1976d2;
+            font-weight: 600;
+        }
+
+        .severity-label {
+            color: #388e3c;
+            font-weight: 600;
+        }
+
+        .result-text {
             color: var(--text-color);
+            font-size: 1.2em;
+            font-weight: 500;
         }
 
         .image-container {
@@ -223,15 +240,6 @@
             width: 100%;
         }
 
-        .footer a {
-            color: #a5d6a7;
-            text-decoration: none;
-        }
-
-        .footer a:hover {
-            text-decoration: underline;
-        }
-
         @media (max-width: 768px) {
             .header-content {
                 flex-direction: column;
@@ -240,60 +248,24 @@
             nav {
                 display: none;
             }
-
             .sidebar-toggle {
                 display: block;
             }
-
             .logo {
-                display: block;
-                margin-left: auto;
-                margin-right: auto;
-                margin-bottom: 1rem;
+                margin: 0 auto 1rem;
             }
-
-            .title {
-                text-align: center;
-            }
-
-            .toggle-buttons {
-                display: block;
-            }
-
             .container {
                 padding: 1rem;
             }
-
             h2 {
                 font-size: 1.5rem;
             }
-
-            .result-container h3 {
-                font-size: 1.2em;
+            .result-line {
+                flex-direction: column;
+                gap: 0.2rem;
             }
-
-            .result-container p {
-                font-size: 1em;
-            }
-
             .analyzed-image {
                 max-height: 300px;
-            }
-        }
-        @media (min-width: 769px) {
-            .header-content {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-            }
-
-            .logo {
-                position: absolute;
-                left: 1rem;
-            }
-
-            .sidebar-toggle {
-                display: none;
             }
         }
     </style>
@@ -327,14 +299,22 @@
     <div class="container">
         <h2>Analysis Result</h2>
         <div class="result-container">
-            <h3>Prediction</h3>
-            <p>{{ label }}</p>
-            <h3>Confidence</h3>
-            <p>{{ confidence }}</p>
+            <div class="result-line">
+                <span class="prediction-label">Prediction:</span>
+                <span class="result-text">{{ label }}</span>
+            </div>
+            <div class="result-line">
+                <span class="confidence-label">Confidence:</span>
+                <span class="result-text">{{ confidence }}</span>
+            </div>
+            <div class="result-line">
+                <span class="severity-label">Severity Category:</span>
+                <span id="severity-category" class="result-text">{{ category }}</span>
+            </div>
         </div>
 
         <div class="image-container">
-            <h3>Analyzed Image:</h3>
+            <h3>Analyzed Image :</h3>
             <img src="{{ url_for('static', filename=image_url) }}" alt="Analyzed Image" class="analyzed-image">
         </div>
 
@@ -343,11 +323,30 @@
         </div>
     </div>
 
-    <!-- Footer -->
     <footer class="footer">
         <p>&copy; 2024 Mango Disease Detection System. All rights reserved.</p>
     </footer>
     <script>
+        // Mapping severity categories to descriptions
+        const severityDescriptions = {
+            'CATEGORY 0': 'C0, Seemingly Infected',
+            'CATEGORY 1': 'C1, 0-25% Slightly Infected',
+            'CATEGORY 2': 'C2, 26-50% Moderately Infected',
+            'CATEGORY 3': 'C3, 51-75% Severely Infected',
+            'CATEGORY 4': 'C4, >75% Intensely Infected'
+        };
+
+        // Update the severity category display
+        document.addEventListener('DOMContentLoaded', () => {
+            const predictionText = "{{ label }}"; // Get the prediction label from the server
+            const severityCategoryElement = document.getElementById('severity-category');
+            const severityCategory = severityCategoryElement.textContent.trim();
+
+            // Set severity category based on prediction
+            const adjustedSeverityCategory = predictionText === 'Healthy' ? 'CATEGORY 0' : severityCategory;
+            severityCategoryElement.textContent = severityDescriptions[adjustedSeverityCategory] || severityCategory;
+        });
+
         function toggleSidebar() {
             const sidebar = document.querySelector('.sidebar');
             sidebar.style.right = sidebar.style.right === '0px' ? '-250px' : '0px';

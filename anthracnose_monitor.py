@@ -2,6 +2,7 @@ import os
 # Set the environment variable
 os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
 #Use in the terminal -- set PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+from pathlib import Path
 import tensorflow as tf
 from flask import Flask, render_template, request, jsonify, Response, redirect, url_for
 import requests
@@ -24,8 +25,10 @@ db = firestore.client()
 app = Flask(__name__)
 
 # Load the TensorFlow Lite model
-interpreter = tf.lite.Interpreter(model_path="bestMangoModel.tflite")
+interpreter = tf.lite.Interpreter(model_path="mango1.tflite")
 interpreter.allocate_tensors()
+interpreter1 = tf.lite.Interpreter(model_path="bestMangoModel.tflite")
+interpreter1.allocate_tensors()
 
 # Path to the uploaded images folder
 UPLOAD_FOLDER = 'static/analysis'
@@ -41,6 +44,10 @@ if not os.path.exists('static/images'):
     
 # Firebase Realtime Database URL
 FIREBASE_URL = "https://mango-monitoring-535a1-default-rtdb.asia-southeast1.firebasedatabase.app/EnvironmentData.json"
+@app.after_request
+def set_headers(response):
+    response.headers["Permissions-Policy"] = "interest-cohort=()"
+    return response
 
 def fetch_latest_sensor_data():
     """Fetch the latest temperature, humidity, and soil moisture data from Firebase."""
@@ -102,7 +109,7 @@ def sensor_cards():
 @app.route("/latest-timestamp")
 def latest_timestamp():
     """Return the latest timestamp from Firebase."""
-    latest_data = fetch_latest_data()
+    latest_data = fetch_latest_data() # type: ignore
     if latest_data:
         return jsonify({"timestamp": latest_data.get("Timestamp", "")})
     return jsonify({"timestamp": ""})
@@ -141,6 +148,7 @@ def get_analysis_custom():
             analysis_data.append({
                 'confidence': data.get('confidence'),
                 'disease': data.get('disease'),
+                'category': data.get('category'),
                 'image_url': image_url,
                 'timestamp': data.get('timestamp'),
             })
@@ -182,6 +190,7 @@ def get_analysis_day():
             analysis_data.append({
                 'confidence': data.get('confidence'),
                 'disease': data.get('disease'),
+                'category': data.get('category'),
                 'image_url': image_url,
                 'timestamp': data.get('timestamp'),
             })
@@ -215,6 +224,7 @@ def get_analysis_week():
             analysis_data.append({
                 'confidence': data.get('confidence'),
                 'disease': data.get('disease'),
+                'category': data.get('category'),
                 'image_url': image_url,
                 'timestamp': data.get('timestamp'),
             })
@@ -246,6 +256,7 @@ def get_analysis_month():
             analysis_data.append({
                 'confidence': data.get('confidence'),
                 'disease': data.get('disease'),
+                'category': data.get('category'),
                 'image_url': image_url,
                 'timestamp': data.get('timestamp'),
             })
@@ -277,6 +288,7 @@ def get_analysis_year():
             analysis_data.append({
                 'confidence': data.get('confidence'),
                 'disease': data.get('disease'),
+                'category': data.get('category'),
                 'image_url': image_url,
                 'timestamp': data.get('timestamp'),
             })
@@ -313,6 +325,7 @@ def get_analysis_graph():
                 analysis_data.append({
                     'confidence': data.get('confidence'),
                     'disease': data.get('disease'),
+                    'category': data.get('category'),
                     'image_url': image_url,
                     'timestamp': data.get('timestamp'),
                 })
@@ -332,7 +345,7 @@ def get_analysis_graph():
 
 
 # Function to send data to Firebase Firestore
-def send_analyze_data(db, label, confidence, image_url):
+def send_analyze_data(db, label, confidence, category, image_url):
     try:
         # Ensure confidence is a native Python float
         confidence_value = float(confidence)
@@ -341,6 +354,7 @@ def send_analyze_data(db, label, confidence, image_url):
         doc_ref = db.collection('analyzed_data').add({
             'disease': label,
             'confidence': confidence_value,
+            'category': category,
             'image_url': image_url,
             'timestamp': firestore.SERVER_TIMESTAMP,  # Server-generated timestamp
         })
@@ -358,35 +372,89 @@ def send_analyze_data(db, label, confidence, image_url):
 
 # Function to preprocess and predict the image using TensorFlow Lite
 def predict_image(img_path):
-    # Load and preprocess the image
-    img = image.load_img(img_path, target_size=(224, 224))  # Resize image to (224, 224)
-    img_array = image.img_to_array(img) / 255.0  # Normalize pixel values to [0, 1]
-    img_array = np.expand_dims(img_array, axis=0)  # Add batch dimension
+    # Load the image for the first model (224x224)
+    img1 = image.load_img(img_path, target_size=(260, 260))  
+    img_array1 = image.img_to_array(img1) / 255.0  # Normalize
+    img_array1 = np.expand_dims(img_array1, axis=0)  # Add batch dimension
 
-    # Get input and output details from the TFLite model
+    # Get input details for the first model
     input_details = interpreter.get_input_details()
     output_details = interpreter.get_output_details()
 
-    # Set the input tensor
-    interpreter.set_tensor(input_details[0]['index'], img_array)
+    # Verify input shape dynamically
+    expected_shape = tuple(input_details[0]['shape'][1:3])
+    if expected_shape != (260, 260):
+        raise ValueError(f"Expected input shape {expected_shape}, but got (260, 260).")
+
+    # Set input tensor for the first model
+    interpreter.set_tensor(input_details[0]['index'], img_array1)
 
     # Run inference
     interpreter.invoke()
 
-    # Get the prediction result
+    # Get prediction result
     output_data = interpreter.get_tensor(output_details[0]['index'])
 
-    # Check if the model outputs a single value or an array
+    # Determine if it's Anthracnose or Healthy
     if output_data.shape[-1] > 1:  # Multi-class output
-        confidence = np.max(output_data)  # Highest confidence score
-        class_index = np.argmax(output_data)  # Index of the predicted class
+        confidence = np.max(output_data)
+        class_index = np.argmax(output_data)
         label = "Anthracnose" if class_index == 0 else "Healthy"
-    else:  # Binary output (e.g., single sigmoid output)
-        confidence = float(output_data[0])  # Convert the first element to float
+    else:  # Binary classification output
+        confidence = float(output_data[0][0])
         label = "Anthracnose" if confidence > 0.5 else "Healthy"
         confidence = confidence if confidence > 0.5 else 1 - confidence
 
-    return label, confidence
+    if label == "Healthy":
+        return label, confidence, "CATEGORY 0"
+
+    # If Anthracnose is detected, use the second model (260x260)
+    class_labels = [
+        'CATEGORY 0',  # Index 0
+        'CATEGORY 1',  # Index 1
+        'CATEGORY 2',  # Index 2
+        'CATEGORY 3',  # Index 3
+        'CATEGORY 4'   # Index 4
+    ]
+
+    # Load the image again for the second model (260x260)
+    img2 = image.load_img(img_path, target_size=(260, 260))  
+    img_array2 = image.img_to_array(img2) / 255.0  # Normalize
+    img_array2 = np.expand_dims(img_array2, axis=0)  # Add batch dimension
+
+    # Get input details for the second model
+    input_details1 = interpreter1.get_input_details()
+    output_details1 = interpreter1.get_output_details()
+
+    # Verify input shape dynamically
+    expected_shape1 = tuple(input_details1[0]['shape'][1:3])
+    if expected_shape1 != (260, 260):
+        raise ValueError(f"Expected input shape {expected_shape1}, but got (260, 260).")
+
+    # Set input tensor for the second model
+    interpreter1.set_tensor(input_details1[0]['index'], img_array2)
+
+    # Run inference
+    interpreter1.invoke()
+
+    # Get prediction result
+    output_data1 = interpreter1.get_tensor(output_details1[0]['index'])
+
+    # Ensure output shape matches the number of classes
+    if output_data1.shape[-1] != len(class_labels):
+        raise ValueError(f"Expected {len(class_labels)} classes but got {output_data1.shape[-1]}.")
+
+    # Find the class with the highest confidence score
+    class_index1 = np.argmax(output_data1)
+    category = class_labels[class_index1]
+    
+    # Modified condition: If Anthracnose but Category 0, change to Healthy
+    if label == "Anthracnose" and category == "CATEGORY 0":
+        label = "Healthy"
+        confidence = 1 - confidence  # Invert confidence measure
+        category = "CATEGORY 0"
+
+    return label, confidence, category
 
 
 # Route for the main page
@@ -416,14 +484,21 @@ def predict():
     print(img_path)
     img_path1 = 'analysis/' + file.filename
     # Make prediction using TensorFlow Lite
-    label, confidence = predict_image(img_path)
-    send_analyze_data(db, label, confidence, img_path1)
+    label, confidence, category = predict_image(img_path)
+
+    # Set severity category
+    severity_category = category if label == "Anthracnose" else "CATEGORY 0"
+    
+    send_analyze_data(db, label, confidence, severity_category, img_path1)
+    
     # Return the prediction result as a JSON response
     return jsonify({
         'label': label,
         'confidence': f'{confidence*100:.2f}%',
+        'category': severity_category,
         'image_url': img_path
     })
+
 # Global camera object
 camera = None
 # Route to show the camera feed and capture photo
@@ -435,7 +510,7 @@ def cam():
 def initialize_camera():
     global camera
     if camera is None:
-        camera = cv2.VideoCapture(1)
+        camera = cv2.VideoCapture(0)
 
 # Function to release the camera
 def release_camera():
@@ -523,15 +598,18 @@ def save_photo():
                 print(f"Failed to delete {file_path}. Reason: {e}")
 
         # Make prediction using TensorFlow Lite
-        label, confidence = predict_image(target_path)
+        label, confidence, category = predict_image(target_path)
+        # Set severity category
+        severity_category = category if label == "Anthracnose" else "CATEGORY 0"
         image_url = f'analysis/{photo_filename}'
-        send_analyze_data(db, label, confidence, image_url)
+        send_analyze_data(db, label, confidence, severity_category, image_url)
         # Prepare variables for rendering
         confidence_percentage = f'{confidence * 100:.2f}%'
         return render_template(
             'save_photo.html',
             label=label,
             confidence=confidence_percentage,
+            category=severity_category,
             image_url=image_url
         )
 
@@ -553,4 +631,4 @@ def retake_photo():
     return redirect(url_for('cam'))  # Redirect to the camera page
 
 if __name__ == '__main__':
-    app.run(debug=True, host='192.168.1.23', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)

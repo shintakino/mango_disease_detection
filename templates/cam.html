@@ -257,6 +257,48 @@
             }
         }
 
+        .warning-note {
+            background-color: #fff8e1;
+            border-left: 4px solid #ffc107;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 6px;
+            text-align: left;
+            width: 100%;
+            max-width: 640px;
+        }
+
+        .warning-note h3 {
+            color: #d32f2f;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .warning-note ul {
+            margin-left: 1.5rem;
+            list-style-type: disc;
+            color: var(--dark-green);
+        }
+
+        .warning-note li {
+            margin-bottom: 0.75rem;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 768px) {
+            .warning-note {
+                padding: 1rem;
+                margin: 1rem 0;
+            }
+            
+            .warning-note h3 {
+                font-size: 1rem;
+            }
+        }
+
         @media (max-width: 768px) {
             nav {
                 display: none;
@@ -334,6 +376,16 @@
         <h2>Live Camera Feed</h2>
         <div id="camera-feed">
             <img src="{{ url_for('video_feed') }}" alt="Camera Feed">
+        </div>
+
+        <!-- Added warning note -->
+        <div class="warning-note">
+            <h3>?? Before Taking a Photo:</h3>
+            <ul>
+                <li>Use a plain white background to avoid unwanted colors in the image</li>
+                <li>Maintain consistent lighting - avoid direct sunlight or shadows</li>
+                <li>Use 3:4 aspect ratio (Recommended: 1280x960 pixels minimum)</li>
+            </ul>
         </div>
 
         <div id="actions">

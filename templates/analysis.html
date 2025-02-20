@@ -269,6 +269,107 @@
             z-index: 1001;
         }
 
+        .slide-image-container {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .infection-badge {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            padding: 8px 12px;
+            border-radius: 20px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .confidence-meter {
+            width: 80px;
+            height: 6px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: white;
+            transition: width 0.3s ease;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 4px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #666;
+        }
+
+        .info-value {
+            color: #333;
+        }
+
+        .badge-text {
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+        .severity-legend {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .severity-legend h3 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            text-align: center;
+            font-size: 1.2rem;
+        }
+
+        .legend-items {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem;
+            background-color: white;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .color-box {
+            width: 25px;
+            height: 25px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 768px) {
+            .legend-items {
+                grid-template-columns: 1fr;
+            }
+            
+            .legend-item {
+                font-size: 0.9rem;
+            }
+        }
+        
         @media (max-width: 768px) {
             nav {
                 display: none;
@@ -391,6 +492,31 @@
             </div>
             <div class="button-group">
                 <button id="reset-zoom" class="button">Reset Zoom</button>
+            </div>
+            <div class="severity-legend">
+                <h3>Infection Severity Legend</h3>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <div class="color-box" style="background-color: #4CAF50;"></div>
+                        <span>C0: Seemingly Infected</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="color-box" style="background-color: #FFC107;"></div>
+                        <span>C1: 0-25% Slightly Infected</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="color-box" style="background-color: #FF9800;"></div>
+                        <span>C2: 26-50% Moderately Infected</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="color-box" style="background-color: #F44336;"></div>
+                        <span>C3: 51-75% Severely Infected</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="color-box" style="background-color: #9C27B0;"></div>
+                        <span>C4: >75% Intensely Infected</span>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -590,175 +716,199 @@
             }
         }
 
+        const infectionColors = {
+            'Healthy': '#4CAF50',      // Green
+            'CATEGORY 0': '#4CAF50',   // Amber
+            'CATEGORY 1': '#FFC107',   // Orange
+            'CATEGORY 2': '#FF9800',   // Red
+            'CATEGORY 3': '#F44336',   // Purple
+            'CATEGORY 4': '#9C27B0'    // Indigo
+        };
 
         function renderGraph(analysisData) {
             const ctx = document.getElementById('analysisGraph').getContext('2d');
-        
-            // Sort the data by timestamp in descending order (latest first)
-            const sortedData = analysisData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-        
-            // Create arrays for labels and confidence data for both 'Healthy' and 'Anthracnose'
-            const labels = [];
-            const healthyConfidence = [];
-            const anthracnoseConfidence = [];
-        
-            // Loop through sorted data and ensure each entry corresponds to a label and confidence value
-            sortedData.forEach(item => {
-                const date = new Date(item.timestamp);
-                const dateTimeLabel = `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
-                labels.push(dateTimeLabel);
-        
-                if (item.disease === 'Healthy') {
-                    healthyConfidence.push(item.confidence * 100);
-                    anthracnoseConfidence.push(null);  // No data for Anthracnose on this point
-                } else if (item.disease === 'Anthracnose') {
-                    healthyConfidence.push(null);  // No data for Healthy on this point
-                    anthracnoseConfidence.push(item.confidence * 100);
-                }
-            });
-        
-            // Ensure labels are unique
-            const uniqueLabels = [...new Set(labels)];
-        
-            // Check if chart instance exists; if so, destroy it before re-creating
+            
+            // Destroy existing chart first
             if (chartInstance) {
                 chartInstance.destroy();
+                chartInstance = null;
             }
-        
-            // Create the chart
+
+            // Check for valid data
+            if (!analysisData || analysisData.length === 0) {
+                console.error('No data available for chart rendering');
+                return;
+            }
+
+            // Create datasets with initial values
+            const datasets = Object.keys(infectionColors).map(label => ({
+                label: label,
+                data: [],
+                borderColor: infectionColors[label],
+                backgroundColor: `${infectionColors[label]}33`,
+                fill: false,
+                tension: 0.4,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                hidden: label === 'Healthy' // Default hide Healthy
+            }));
+
+            // Process data
+            const labels = [];
+            analysisData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+                        .forEach(item => {
+                const date = new Date(item.timestamp);
+                labels.push(date.toLocaleString());
+                
+                const dataLabel = item.disease === 'Anthracnose' 
+                                ? item.category 
+                                : 'CATEGORY 0'; // Set Healthy as CATEGORY 0
+
+                datasets.forEach(dataset => {
+                    if (dataset.label === dataLabel) {
+                        dataset.data.push(item.confidence * 100);
+                    } else {
+                        dataset.data.push(null);
+                    }
+                });
+            });
+
+            // Filter out empty datasets
+            const validDatasets = datasets.filter(d => 
+                d.data.some(v => v !== null && v !== undefined)
+            );
+
+            // Check if we have any visible data
+            if (validDatasets.length === 0) {
+                console.warn('No valid data to display in chart');
+                return;
+            }
+
+            // Create new chart instance
             chartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: uniqueLabels,
-                    datasets: [
-                        {
-                            label: 'Healthy',
-                            data: healthyConfidence,
-                            borderColor: '#4caf50',
-                            backgroundColor: 'rgba(76, 175, 80, 0.1)',
-                            fill: true,
-                            tension: 0.4,
-                            spanGaps: true  // Connect points even with missing data
-                        },
-                        {
-                            label: 'Anthracnose',
-                            data: anthracnoseConfidence,
-                            borderColor: '#f44336',
-                            backgroundColor: 'rgba(244, 67, 54, 0.1)',
-                            fill: true,
-                            tension: 0.4,
-                            spanGaps: true  // Connect points even with missing data
-                        }
-                    ]
+                    labels: labels,
+                    datasets: validDatasets
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Date and Time'
-                            },
-                            reverse: true, // Ensure latest data appears first
-                            ticks: {
-                                maxTicksLimit: 10, // Adjust for better readability
-                                autoSkip: true,
-                            }
+                        x: { 
+                            title: { display: true, text: 'Timestamp' }, 
+                            ticks: { autoSkip: true, maxTicksLimit: 10 } 
                         },
-                        y: {
-                            title: {
-                                display: true,
-                                text: 'Confidence (%)'
-                            },
-                            min: 0,
-                            max: 100,
-                            ticks: {
-                                stepSize: 20 // Customize as needed
-                            }
+                        y: { 
+                            title: { display: true, text: 'Confidence (%)' }, 
+                            min: 0, 
+                            max: 100, 
+                            ticks: { stepSize: 20 } 
                         }
                     },
                     plugins: {
-                        legend: {
+                        legend: { 
                             position: 'top',
+                            onHover: (e) => e.native.target.style.cursor = 'pointer',
+                            onLeave: (e) => e.native.target.style.cursor = 'default'
                         },
                         tooltip: {
-                            mode: 'index',
+                            mode: 'nearest',
                             intersect: false,
                             callbacks: {
-                                label: function (context) {
-                                    return `${context.dataset.label}: ${context.raw.toFixed(2)}%`;
+                                title: (context) => {
+                                    return context[0].label || 'Unknown';
+                                },
+                                label: (context) => {
+                                    const value = context.parsed.y;
+                                    return value ? 
+                                        `${context.dataset.label}: ${value.toFixed(2)}%` : 
+                                        'No data';
                                 }
                             }
                         },
                         zoom: {
-                            zoom: {
-                                wheel: {
-                                    enabled: true,
-                                },
-                                pinch: {
-                                    enabled: true
-                                },
-                                mode: 'x',
+                            zoom: { 
+                                wheel: { enabled: true }, 
+                                pinch: { enabled: true }, 
+                                mode: 'x' 
                             },
-                            pan: {
-                                enabled: true,
-                                mode: 'x',
-                            },
+                            pan: { 
+                                enabled: true, 
+                                mode: 'x' 
+                            }
                         }
                     },
-                    interaction: {
-                        mode: 'nearest',
-                        axis: 'x',
-                        intersect: false
+                    interaction: { 
+                        mode: 'nearest', 
+                        axis: 'x', 
+                        intersect: false 
                     }
-                },
-                plugins: [ChartZoom]
+                }
             });
-        
-            console.log('Graph rendered with all data, ensuring no missing data points.');
         }
-        
-        
 
+        // Updated Slideshow Rendering
         function renderSlideshow(analysisData) {
             const slideshowContainer = document.getElementById('image-slideshow');
-            slideshowContainer.innerHTML = ''; // Clear any existing slides
+            slideshowContainer.innerHTML = '';
             slides = [];
-        
-            // Sort the data from latest to oldest based on timestamp
+
             const sortedData = analysisData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-        
-            // Create slides for each item in the sorted data
-            sortedData.forEach((item, index) => {
+
+ sortedData.forEach((item, index) => {
                 const slide = document.createElement('div');
-                slide.className = `slide ${index === 0 ? 'active' : ''}`; // First slide is active by default
-        
+                slide.className = `slide ${index === 0 ? 'active' : ''}`;
+
+                // Determine display values
+                const displayLabel = item.disease === 'Anthracnose' ? item.category : 'CATEGORY 0'; // Set Healthy as CATEGORY 0
+                const displayColor = infectionColors[displayLabel];
+
+                const imgContainer = document.createElement('div');
+                imgContainer.className = 'slide-image-container';
+                
                 const img = document.createElement('img');
                 img.src = item.image_url;
-                img.alt = 'Analyzed Image';
-        
+                img.alt = 'Analyzed Mango';
+                img.className = 'slide-image';
+
+                const badge = document.createElement('div');
+                badge.className = 'infection-badge';
+                badge.style.backgroundColor = displayColor;
+                badge.innerHTML = `
+                    <span class="badge-text">${displayLabel}</span>
+                    <div class="confidence-meter">
+                        <div class="confidence-fill" 
+                             style="width: ${item.confidence * 100}%"></div>
+                    </div>
+                `;
+
                 const info = document.createElement('div');
                 info.className = 'slide-info';
-        
-                const label = document.createElement('p');
-                label.innerText = `Disease: ${item.disease}`;
-                const confidence = document.createElement('p');
-                confidence.innerText = `Confidence: ${(item.confidence * 100).toFixed(2)}%`;
-                const timestamp = document.createElement('p');
-                timestamp.className = 'timestamp';
-                timestamp.innerText = new Date(item.timestamp).toLocaleString();
-        
-                info.appendChild(label);
-                info.appendChild(confidence);
-                info.appendChild(timestamp);
-        
-                slide.appendChild(img);
+                info.innerHTML = `
+                    <div class="info-row">
+                        <span class="info-label">Confidence:</span>
+                        <span class="info-value">${(item.confidence * 100).toFixed(2)}%</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Time:</span>
+                        <span class="info-value">${new Date(item.timestamp).toLocaleString()}</span>
+                    </div>
+                    ${item.disease === 'Anthracnose' ? `
+                    <div class="info-row">
+                        <span class="info-label">Severity:</span>
+                        <span class="info-value">${item.category.replace('CATEGORY ', 'Level ')}</span>
+                    </div>` : ''}
+                `;
+
+                imgContainer.appendChild(img);
+                imgContainer.appendChild(badge);
+                slide.appendChild(imgContainer);
                 slide.appendChild(info);
                 slideshowContainer.appendChild(slide);
-                slides.push(slide); // Add slide to the array for navigation
+                slides.push(slide);
             });
-        
+
             setUpSlideshowNavigation();
         }
         
@@ -799,4 +949,3 @@
     </script>
 </body>
 </html>
-

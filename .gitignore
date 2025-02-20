@@ -11,3 +11,6 @@ mango_disease_model.h5
 mango_disease_model.tflite
 Site Visualization
 firebaseFirestore.json
+mango1.tflite
+mango.tflite
+MangoModel.tflite

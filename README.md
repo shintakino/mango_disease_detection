@@ -886,7 +886,7 @@ git push origin feature/amazing-enhancement
 ## 👨‍💻 Meet the Developer
 
 <div align="center">
-  <img src="https://via.placeholder.com/150x150/667eea/FFFFFF?text=👨‍💻" alt="Joshua Jay Narvaza Javier" style="border-radius: 75px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); margin: 20px;">
+  <img src="https://img.shields.io/badge/GitHub-@shintakino-181717?style=for-the-badge&logo=github&logoColor=white?text=👨‍💻" alt="Joshua Jay Narvaza Javier" style="border-radius: 75px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); margin: 20px;">
   
   ### **Joshua Jay Narvaza Javier**
   
